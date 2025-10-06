@@ -1,0 +1,69 @@
+"use client"
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { BookingForm } from "./booking-form"
+import { useCreateBooking } from "@/lib/hooks/useBookings"
+import { useRouter } from "next/navigation"
+import type { BookingFormData } from "@/lib/types"
+
+interface CreateBookingDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  defaultDate?: Date | null
+  defaultTime?: string | null
+}
+
+export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTime }: CreateBookingDialogProps) {
+  const router = useRouter()
+  const createBooking = useCreateBooking()
+
+  const handleSubmit = async (data: BookingFormData) => {
+    try {
+      await createBooking.mutateAsync({
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        activityId: data.activityId,
+        venueId: data.venueId,
+        guestName: data.guestName,
+        suiteNumber: data.suiteNumber,
+        pax: data.pax,
+        gaName: data.gaName,
+        driverName: data.driverName,
+        remark: data.remark,
+        status: data.status,
+      })
+      onOpenChange(false)
+    } catch (error) {
+      console.error("[v0] Failed to create booking:", error)
+    }
+  }
+
+  const defaultValues = {
+    date: defaultDate ? defaultDate.toISOString().split("T")[0] : "",
+    startTime: defaultTime || "",
+    endTime: "",
+    categoryId: "",
+    activityId: "",
+    venueId: "",
+    guestName: "",
+    suiteNumber: "",
+    pax: 1,
+    gaName: "",
+    driverName: "",
+    remark: "",
+    status: "confirmed" as const,
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Booking</DialogTitle>
+          <DialogDescription>Fill in the details for the new booking</DialogDescription>
+        </DialogHeader>
+        <BookingForm defaultValues={defaultValues} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
+      </DialogContent>
+    </Dialog>
+  )
+}

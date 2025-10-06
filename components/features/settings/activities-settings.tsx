@@ -1,0 +1,248 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import {
+  useActivities,
+  useCategories,
+  useCreateActivity,
+  useUpdateActivity,
+  useDeleteActivity,
+} from "@/lib/hooks/useActivities"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2 } from "lucide-react"
+import type { Activity } from "@/lib/types"
+
+export function ActivitiesSettings() {
+  const { data: activities, isLoading } = useActivities()
+  const { data: categories } = useCategories()
+  const createActivity = useCreateActivity()
+  const updateActivity = useUpdateActivity()
+  const deleteActivity = useDeleteActivity()
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
+  const [formData, setFormData] = useState({
+    name: "",
+    categoryId: "",
+    description: "",
+    duration: 60,
+    maxCapacity: 10,
+  })
+
+  const handleOpenDialog = (activity?: Activity) => {
+    if (activity) {
+      setEditingActivity(activity)
+      setFormData({
+        name: activity.name,
+        categoryId: activity.categoryId,
+        description: activity.description || "",
+        duration: activity.duration,
+        maxCapacity: activity.maxCapacity || 10,
+      })
+    } else {
+      setEditingActivity(null)
+      setFormData({
+        name: "",
+        categoryId: "",
+        description: "",
+        duration: 60,
+        maxCapacity: 10,
+      })
+    }
+    setDialogOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (editingActivity) {
+        await updateActivity.mutateAsync({
+          id: editingActivity.id,
+          name: formData.name,
+          categoryId: formData.categoryId,
+          description: formData.description || undefined,
+          duration: formData.duration,
+          maxCapacity: formData.maxCapacity,
+        })
+      } else {
+        await createActivity.mutateAsync({
+          name: formData.name,
+          categoryId: formData.categoryId,
+          description: formData.description || undefined,
+          duration: formData.duration,
+          maxCapacity: formData.maxCapacity,
+        })
+      }
+      setDialogOpen(false)
+      setFormData({
+        name: "",
+        categoryId: "",
+        description: "",
+        duration: 60,
+        maxCapacity: 10,
+      })
+    } catch (error) {
+      console.error("[v0] Failed to save activity:", error)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this activity? This cannot be undone.")) {
+      try {
+        await deleteActivity.mutateAsync(id)
+      } catch (error) {
+        console.error("[v0] Failed to delete activity:", error)
+      }
+    }
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Activities</CardTitle>
+              <CardDescription>Manage available activities</CardDescription>
+            </div>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Max Capacity</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : activities?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    No activities found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                activities?.map((activity) => {
+                  const category = categories?.find((c) => c.id === activity.categoryId)
+                  return (
+                    <TableRow key={activity.id}>
+                      <TableCell className="font-medium">{activity.name}</TableCell>
+                      <TableCell>{category?.name || "-"}</TableCell>
+                      <TableCell>{activity.duration} min</TableCell>
+                      <TableCell>{activity.maxCapacity || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(activity)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(activity.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingActivity ? "Edit Activity" : "Add Activity"}</DialogTitle>
+            <DialogDescription>
+              {editingActivity ? "Update the activity details" : "Create a new activity"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Yoga Session"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Category</label>
+              <Select value={formData.categoryId} onValueChange={(v) => setFormData({ ...formData, categoryId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Description</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Duration (minutes)</label>
+                <Input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: Number.parseInt(e.target.value) })}
+                  min={1}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Max Capacity</label>
+                <Input
+                  type="number"
+                  value={formData.maxCapacity}
+                  onChange={(e) => setFormData({ ...formData, maxCapacity: Number.parseInt(e.target.value) })}
+                  min={1}
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingActivity ? "Update" : "Create"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
