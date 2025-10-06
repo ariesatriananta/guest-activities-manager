@@ -8,9 +8,9 @@ import "./globals.css"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "Guest Activities Manager",
+  title: "Guest Activities",
   description: "Hotel guest daily activities management system",
-  generator: "v0.app",
+  generator: "dino-apps",
 }
 
 export default function RootLayout({

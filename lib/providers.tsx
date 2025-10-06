@@ -31,6 +31,32 @@ export function Providers({ children }: { children: React.ReactNode }) {
     initDB()
   }, [])
 
+  // Hide Next.js dev toolbar (floating "N" button) permanently
+  useEffect(() => {
+    const hideToolbar = () => {
+      const selectors = [
+        '#nextjs-portal',
+        '[data-nextjs-portal]',
+        '[data-nextjs-toolbar]',
+        '[data-nextjs-floating]',
+        'button[aria-label*="Next.js" i]',
+        '[aria-label*="Next.js Toolbar" i]'
+      ]
+      for (const sel of selectors) {
+        document.querySelectorAll<HTMLElement>(sel).forEach((el) => {
+          el.style.setProperty('display', 'none', 'important')
+          el.setAttribute('hidden', 'true')
+        })
+      }
+    }
+
+    hideToolbar()
+
+    const observer = new MutationObserver(() => hideToolbar())
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

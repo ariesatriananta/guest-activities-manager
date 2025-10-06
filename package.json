@@ -1,12 +1,12 @@
 {
-  "name": "my-v0-project",
+  "name": "dino-apps",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "cross-env NEXT_DISABLE_DEVTOOLS=1 next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "cross-env NEXT_DISABLE_DEVTOOLS=1 next start"
   },
   "dependencies": {
     "@fullcalendar/core": "latest",
@@ -73,6 +73,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",

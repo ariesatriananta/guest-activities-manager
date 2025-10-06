@@ -6,10 +6,11 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, AlertTriangle, Plus, LayoutGrid } from "lucide-react"
+import { Calendar, Clock, Users, AlertTriangle, LayoutGrid } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 import type { BookingStatus } from "@/lib/types"
+import { NavLayout } from "@/components/layout/nav-layout"
 
 export default function DashboardPage() {
   const { data: bookings } = useBookings()
@@ -41,13 +42,11 @@ export default function DashboardPage() {
     if (!bookings || !venues) return []
     const warns: string[] = []
 
-    // Check for draft bookings today
     const draftsToday = todayBookings.filter((b) => b.status === "draft")
     if (draftsToday.length > 0) {
       warns.push(`${draftsToday.length} draft booking(s) for today need confirmation`)
     }
 
-    // Check for bookings without GA or driver
     const missingStaff = todayBookings.filter((b) => !b.gaName || !b.driverName)
     if (missingStaff.length > 0) {
       warns.push(`${missingStaff.length} booking(s) today missing GA or driver assignment`)
@@ -81,60 +80,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Guest Activities Manager</h1>
-              <p className="text-sm text-muted-foreground">Hotel Activity Management System</p>
-            </div>
-            <Button asChild>
-              <Link href="/bookings/new">
-                <Plus className="h-4 w-4 mr-2" />
-                New Booking
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="flex gap-1 overflow-x-auto">
-            <Link href="/">
-              <Button variant="ghost" className="rounded-none border-b-2 border-primary">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/calendar">
-              <Button variant="ghost" className="rounded-none border-b-2 border-transparent hover:border-muted">
-                Calendar
-              </Button>
-            </Link>
-            <Link href="/bookings">
-              <Button variant="ghost" className="rounded-none border-b-2 border-transparent hover:border-muted">
-                Bookings
-              </Button>
-            </Link>
-            <Link href="/reports">
-              <Button variant="ghost" className="rounded-none border-b-2 border-transparent hover:border-muted">
-                Reports
-              </Button>
-            </Link>
-            <Link href="/settings">
-              <Button variant="ghost" className="rounded-none border-b-2 border-transparent hover:border-muted">
-                Settings
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8">
+    <NavLayout>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
@@ -195,7 +142,7 @@ export default function DashboardPage() {
               <ul className="space-y-2">
                 {warnings.map((warning, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <span className="text-destructive">•</span>
+                    <span className="text-destructive">{"\u2022"}</span>
                     <span>{warning}</span>
                   </li>
                 ))}
@@ -244,7 +191,7 @@ export default function DashboardPage() {
                             <span className="font-medium">Guest:</span> {booking.guestName} ({booking.suiteNumber})
                           </p>
                           <p>
-                            <span className="font-medium">Venue:</span> {venue?.name} •{" "}
+                            <span className="font-medium">Venue:</span> {venue?.name} {" \u2022 "}
                             <span className="font-medium">Pax:</span> {booking.pax}
                           </p>
                           {(booking.gaName || booking.driverName) && (
@@ -254,7 +201,7 @@ export default function DashboardPage() {
                                   <span className="font-medium">GA:</span> {booking.gaName}
                                 </>
                               )}
-                              {booking.gaName && booking.driverName && " • "}
+                              {booking.gaName && booking.driverName && " \u2022 "}
                               {booking.driverName && (
                                 <>
                                   <span className="font-medium">Driver:</span> {booking.driverName}
@@ -308,7 +255,7 @@ export default function DashboardPage() {
                         <div>
                           <div className="font-medium">{activity?.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {booking.guestName} • {venue?.name}
+                            {booking.guestName} {" \u2022 "} {venue?.name}
                           </div>
                         </div>
                       </div>
@@ -322,7 +269,8 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </NavLayout>
   )
 }
+

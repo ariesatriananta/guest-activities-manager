@@ -1,30 +1,20 @@
 # Guest Daily Activities Manager
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Managed with dino-apps
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/dinos-projects-0c4fc91a/v0-guest-daily-activities-manager)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/tpsd50QqhYN)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](#)
+[![Built with dino-apps](https://img.shields.io/badge/Built%20with-dino--apps-black?style=for-the-badge)](#)
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+Repo ini adalah sumber kode untuk aplikasi Guest Daily Activities Manager dan kini dikelola sebagai bagian dari dino-apps.
 
 ## Deployment
 
-Your project is live at:
+Setel URL produksi kamu di bagian ini jika sudah tersedia.
 
-**[https://vercel.com/dinos-projects-0c4fc91a/v0-guest-daily-activities-manager](https://vercel.com/dinos-projects-0c4fc91a/v0-guest-daily-activities-manager)**
+## Pengembangan
 
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/tpsd50QqhYN](https://v0.app/chat/projects/tpsd50QqhYN)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+- Install dependensi: `pnpm install`
+- Jalankan dev server: `pnpm dev`
+- Build untuk produksi: `pnpm build`

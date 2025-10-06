@@ -28,8 +28,8 @@ export function NavLayout({ children }: NavLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Guest Activities Manager</h1>
-              <p className="text-sm text-muted-foreground">Hotel Activity Management System</p>
+              <h1 className="text-2xl font-bold">Guest Activities</h1>
+              <p className="text-sm text-muted-foreground">Demo Apps for <b>Melissa</b> at AmanJiwo</p>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
