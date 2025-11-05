@@ -26,8 +26,8 @@ export function useUpdateBooking() {
   const { mutate } = useSWR<Booking[]>("bookings")
 
   return {
-    mutateAsync: async (data: Booking) => {
-      const updated = await bookingsService.update(data.id, data)
+    mutateAsync: async ({ id, data }: { id: string; data: Partial<Booking> }) => {
+      const updated = await bookingsService.update(id, data)
       mutate()
       return updated
     },
@@ -47,7 +47,7 @@ export function useDeleteBooking() {
 
 export function useCheckVenueConflict() {
   return {
-    mutateAsync: async (date: string, venueId: string, excludeBookingId?: string) => {
+    mutateAsync: async ({ date, venueId, excludeBookingId }: { date: string; venueId: string; excludeBookingId?: string }) => {
       return bookingsService.checkVenueConflict(date, venueId, excludeBookingId)
     },
   }

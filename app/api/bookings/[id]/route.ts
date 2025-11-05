@@ -1,0 +1,108 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { sql } from "@/lib/db"
+
+export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const id = params.id
+  const rows = await sql<any[]>`
+    SELECT id,
+           to_char(date, 'YYYY-MM-DD') as date,
+           to_char(start_time, 'HH24:MI') as "startTime",
+           to_char(end_time, 'HH24:MI') as "endTime",
+           activity_id as "activityId",
+           venue_id as "venueId",
+           guest_name as "guestName",
+           suite_number as "suiteNumber",
+           pax,
+           ga_name as "gaName",
+           driver_name as "driverName",
+           remark,
+           status,
+           created_at as "createdAt"
+    FROM bookings
+    WHERE id = ${id}
+    LIMIT 1
+  `
+  return NextResponse.json(rows[0] || null)
+}
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const id = params.id
+  const body = await req.json()
+  const {
+    date,
+    startTime,
+    endTime,
+    activityId,
+    venueId,
+    guestName,
+    suiteNumber,
+    pax,
+    gaName,
+    driverName,
+    remark,
+    status,
+  } = body || {}
+
+  // Conflict check for single-booking-per-day venues
+  if (venueId && date) {
+    const venues = await sql<{ is_single_booking_per_day: boolean; name: string }[]>`
+      SELECT is_single_booking_per_day, name FROM venues WHERE id = ${venueId} LIMIT 1
+    `
+    const v = venues[0]
+    if (v?.is_single_booking_per_day) {
+      const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status <> 'cancelled' AND id <> ${id} LIMIT 1`
+      if (conflicts.length > 0) {
+        return NextResponse.json({ error: `Venue ${v.name} already has a booking on ${date}` }, { status: 400 })
+      }
+    }
+  }
+
+  const rows = await sql<any[]>`
+    UPDATE bookings
+    SET
+      date = COALESCE(${date ?? null}::date, date),
+      start_time = COALESCE(${startTime ?? null}::time, start_time),
+      end_time = COALESCE(${endTime ?? null}::time, end_time),
+      activity_id = COALESCE(${activityId ?? null}::uuid, activity_id),
+      venue_id = COALESCE(${venueId ?? null}::uuid, venue_id),
+      guest_name = COALESCE(${guestName ?? null}, guest_name),
+      suite_number = COALESCE(${suiteNumber ?? null}, suite_number),
+      pax = COALESCE(${pax ?? null}::int, pax),
+      ga_name = COALESCE(${gaName ?? null}, ga_name),
+      driver_name = COALESCE(${driverName ?? null}, driver_name),
+      remark = COALESCE(${remark ?? null}, remark),
+      status = COALESCE(${status ?? null}, status),
+      updated_at = now()
+    WHERE id = ${id}
+    RETURNING id,
+      to_char(date, 'YYYY-MM-DD') as date,
+      to_char(start_time, 'HH24:MI') as "startTime",
+      to_char(end_time, 'HH24:MI') as "endTime",
+      activity_id as "activityId",
+      venue_id as "venueId",
+      guest_name as "guestName",
+      suite_number as "suiteNumber",
+      pax,
+      ga_name as "gaName",
+      driver_name as "driverName",
+      remark,
+      status,
+      created_at as "createdAt"
+  `
+  return NextResponse.json(rows[0])
+}
+
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const id = params.id
+  await sql`DELETE FROM bookings WHERE id = ${id}`
+  return NextResponse.json({ ok: true })
+}
+

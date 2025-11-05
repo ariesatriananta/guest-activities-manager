@@ -1,26 +1,49 @@
 import type { Booking, ListBookingsParams } from "@/lib/types"
-import * as mockDB from "@/lib/data/mockDB"
 
 export const bookingsService = {
   getAll: async (params?: ListBookingsParams): Promise<Booking[]> => {
-    return mockDB.listBookings(params)
+    const qs = new URLSearchParams()
+    if (params?.dateFrom) qs.set("dateFrom", params.dateFrom)
+    if (params?.dateTo) qs.set("dateTo", params.dateTo)
+    if (params?.venueId) qs.set("venueId", params.venueId)
+    if (params?.categoryId) qs.set("categoryId", params.categoryId)
+    if (params?.status) qs.set("status", params.status)
+    const res = await fetch(`/api/bookings${qs.toString() ? `?${qs}` : ""}`, { cache: "no-store" })
+    if (!res.ok) throw new Error("Failed to load bookings")
+    return res.json()
   },
 
   getById: async (id: string): Promise<Booking | undefined> => {
-    const booking = await mockDB.getBooking(id)
-    return booking || undefined
+    const res = await fetch(`/api/bookings/${id}`, { cache: "no-store" })
+    if (!res.ok) return undefined
+    return (await res.json()) || undefined
   },
 
   create: async (data: Omit<Booking, "id" | "createdAt">): Promise<Booking> => {
-    return mockDB.createBooking(data)
+    const res = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+    if (!res.ok) {
+      const j = await res.json().catch(() => null)
+      throw new Error(j?.error || "Failed to create booking")
+    }
+    return res.json()
   },
 
   update: async (id: string, data: Partial<Booking>): Promise<Booking | null> => {
-    return mockDB.updateBooking(id, data)
+    const res = await fetch(`/api/bookings/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+    if (!res.ok) {
+      const j = await res.json().catch(() => null)
+      throw new Error(j?.error || "Failed to update booking")
+    }
+    return res.json()
   },
 
   delete: async (id: string): Promise<boolean> => {
-    return mockDB.deleteBooking(id)
+    const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" })
+    if (!res.ok) {
+      const j = await res.json().catch(() => null)
+      throw new Error(j?.error || "Failed to delete booking")
+    }
+    return true
   },
 
   checkVenueConflict: async (
@@ -28,11 +51,8 @@ export const bookingsService = {
     venueId: string,
     excludeBookingId?: string,
   ): Promise<{ hasConflict: boolean; venueName?: string }> => {
-    const hasConflict = await mockDB.hasVenueConflict(date, venueId, excludeBookingId)
-    if (hasConflict) {
-      const venue = await mockDB.getVenue(venueId)
-      return { hasConflict: true, venueName: venue?.name }
-    }
-    return { hasConflict: false }
+    const res = await fetch(`/api/bookings/conflict`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, venueId, excludeBookingId }) })
+    if (!res.ok) throw new Error("Failed to check conflict")
+    return res.json()
   },
 }

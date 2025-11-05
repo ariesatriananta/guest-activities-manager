@@ -18,3 +18,8 @@ Setel URL produksi kamu di bagian ini jika sudah tersedia.
 - Install dependensi: `pnpm install`
 - Jalankan dev server: `pnpm dev`
 - Build untuk produksi: `pnpm build`
+
+## Database (Neon)
+
+- Skrip schema dan seed master data (Categories, Activities, Venues) tersedia di `sql/master-data.sql`.
+- Jalankan file tersebut di dashboard SQL Neon (idempotent, aman dijalankan berulang).

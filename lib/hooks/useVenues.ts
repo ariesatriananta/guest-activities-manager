@@ -1,18 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { Venue } from "@/lib/types"
-import * as mockDB from "@/lib/data/mockDB"
 
 export function useVenues() {
   return useQuery({
     queryKey: ["venues"],
-    queryFn: () => mockDB.listVenues(),
+    queryFn: async () => {
+      const res = await fetch("/api/venues", { cache: "no-store" })
+      if (!res.ok) throw new Error("Failed to load venues")
+      return (await res.json()) as Venue[]
+    },
   })
 }
 
 export function useVenue(id: string | null) {
   return useQuery({
     queryKey: ["venue", id],
-    queryFn: () => (id ? mockDB.getVenue(id) : null),
+    queryFn: async () => {
+      if (!id) return null
+      const res = await fetch("/api/venues", { cache: "no-store" })
+      if (!res.ok) throw new Error("Failed to load venues")
+      const list = (await res.json()) as Venue[]
+      return list.find((v) => v.id === id) || null
+    },
     enabled: !!id,
   })
 }
@@ -21,7 +30,11 @@ export function useCreateVenue() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: Omit<Venue, "id">) => mockDB.createVenue(data),
+    mutationFn: async (data: Omit<Venue, "id">) => {
+      const res = await fetch("/api/venues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+      if (!res.ok) throw new Error("Failed to create venue")
+      return res.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues"] })
     },
@@ -32,7 +45,11 @@ export function useUpdateVenue() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Venue> }) => mockDB.updateVenue(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Venue> }) => {
+      const res = await fetch(`/api/venues/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+      if (!res.ok) throw new Error("Failed to update venue")
+      return res.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues"] })
     },
@@ -43,7 +60,11 @@ export function useDeleteVenue() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => mockDB.deleteVenue(id),
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/venues/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete venue")
+      return res.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues"] })
     },

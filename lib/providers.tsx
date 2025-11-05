@@ -4,7 +4,6 @@ import type React from "react"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
-import { seed } from "@/lib/data/mockDB"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "next-auth/react"
 
@@ -21,16 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
   )
 
-  useEffect(() => {
-    // Initialize database with seed data if empty
-    const initDB = async () => {
-      const stored = localStorage.getItem("guest-activities-db")
-      if (!stored) {
-        await seed()
-      }
-    }
-    initDB()
-  }, [])
+  // Note: Seeding via mockDB has been disabled after migrating to Neon DB.
 
   // Hide Next.js dev toolbar (floating "N" button) permanently
   useEffect(() => {

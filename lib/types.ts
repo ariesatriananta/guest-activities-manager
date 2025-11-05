@@ -1,6 +1,7 @@
 export interface ActivityCategory {
   id: string
   name: string
+  description?: string
 }
 
 export interface Activity {
@@ -8,12 +9,17 @@ export interface Activity {
   categoryId: string
   name: string
   isActive: boolean
+  description?: string
+  duration: number
+  maxCapacity?: number
 }
 
 export interface Venue {
   id: string
   name: string
   isSingleBookingPerDay: boolean
+  location?: string
+  capacity?: number
 }
 
 export type BookingStatus = "draft" | "confirmed" | "cancelled"
@@ -71,3 +77,6 @@ export interface Profile {
   created_at: string
   updated_at: string
 }
+
+// Compat alias
+export type Category = ActivityCategory
