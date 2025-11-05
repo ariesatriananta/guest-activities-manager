@@ -9,7 +9,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import type { Venue } from "@/lib/types"
 
 export function VenuesSettings() {
@@ -25,6 +36,10 @@ export function VenuesSettings() {
     location: "",
     capacity: 10,
   })
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
 
   const handleOpenDialog = (venue?: Venue) => {
     if (venue) {
@@ -49,6 +64,7 @@ export function VenuesSettings() {
     e.preventDefault()
 
     try {
+      setSubmitting(true)
       if (editingVenue) {
         await updateVenue.mutateAsync({
           id: editingVenue.id,
@@ -56,12 +72,14 @@ export function VenuesSettings() {
           location: formData.location || undefined,
           capacity: formData.capacity,
         })
+        toast.success("Venue updated")
       } else {
         await createVenue.mutateAsync({
           name: formData.name,
           location: formData.location || undefined,
           capacity: formData.capacity,
         })
+        toast.success("Venue created")
       }
       setDialogOpen(false)
       setFormData({
@@ -71,16 +89,30 @@ export function VenuesSettings() {
       })
     } catch (error) {
       console.error("[v0] Failed to save venue:", error)
+      toast.error((error as any)?.message || "Failed to save venue")
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this venue? This cannot be undone.")) {
-      try {
-        await deleteVenue.mutateAsync(id)
-      } catch (error) {
-        console.error("[v0] Failed to delete venue:", error)
-      }
+  const askDelete = (venue: Venue) => {
+    setSelectedVenue(venue)
+    setConfirmOpen(true)
+  }
+
+  const onConfirmDelete = async () => {
+    if (!selectedVenue) return
+    try {
+      setDeletingId(selectedVenue.id)
+      await deleteVenue.mutateAsync(selectedVenue.id)
+      toast.success("Venue deleted")
+    } catch (error) {
+      console.error("[v0] Failed to delete venue:", error)
+      toast.error((error as any)?.message || "Failed to delete venue")
+    } finally {
+      setDeletingId(null)
+      setConfirmOpen(false)
+      setSelectedVenue(null)
     }
   }
 
@@ -133,8 +165,12 @@ export function VenuesSettings() {
                         <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(venue)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(venue.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={() => askDelete(venue)} disabled={deletingId === venue.id}>
+                          {deletingId === venue.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -181,14 +217,39 @@ export function VenuesSettings() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                 Cancel
               </Button>
-              <Button type="submit">{editingVenue ? "Update" : "Create"}</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingVenue ? (submitting ? "Updating..." : "Update") : (submitting ? "Creating..." : "Create")}
+              </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Venue</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedVenue ? (
+                <>Are you sure you want to delete <span className="font-medium">{selectedVenue.name}</span>? This cannot be undone.</>
+              ) : (
+                <>Are you sure?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirmDelete} disabled={!!deletingId}>
+              {deletingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

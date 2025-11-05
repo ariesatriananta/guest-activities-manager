@@ -16,7 +16,18 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import type { Activity } from "@/lib/types"
 
 export function ActivitiesSettings() {
@@ -35,6 +46,10 @@ export function ActivitiesSettings() {
     duration: 60,
     maxCapacity: 10,
   })
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
 
   const handleOpenDialog = (activity?: Activity) => {
     if (activity) {
@@ -63,6 +78,7 @@ export function ActivitiesSettings() {
     e.preventDefault()
 
     try {
+      setSubmitting(true)
       if (editingActivity) {
         await updateActivity.mutateAsync({
           id: editingActivity.id,
@@ -72,6 +88,7 @@ export function ActivitiesSettings() {
           duration: formData.duration,
           maxCapacity: formData.maxCapacity,
         })
+        toast.success("Activity updated")
       } else {
         await createActivity.mutateAsync({
           name: formData.name,
@@ -80,6 +97,7 @@ export function ActivitiesSettings() {
           duration: formData.duration,
           maxCapacity: formData.maxCapacity,
         })
+        toast.success("Activity created")
       }
       setDialogOpen(false)
       setFormData({
@@ -91,16 +109,30 @@ export function ActivitiesSettings() {
       })
     } catch (error) {
       console.error("[v0] Failed to save activity:", error)
+      toast.error((error as any)?.message || "Failed to save activity")
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this activity? This cannot be undone.")) {
-      try {
-        await deleteActivity.mutateAsync(id)
-      } catch (error) {
-        console.error("[v0] Failed to delete activity:", error)
-      }
+  const askDelete = (activity: Activity) => {
+    setSelectedActivity(activity)
+    setConfirmOpen(true)
+  }
+
+  const onConfirmDelete = async () => {
+    if (!selectedActivity) return
+    try {
+      setDeletingId(selectedActivity.id)
+      await deleteActivity.mutateAsync(selectedActivity.id)
+      toast.success("Activity deleted")
+    } catch (error) {
+      console.error("[v0] Failed to delete activity:", error)
+      toast.error((error as any)?.message || "Failed to delete activity")
+    } finally {
+      setDeletingId(null)
+      setConfirmOpen(false)
+      setSelectedActivity(null)
     }
   }
 
@@ -157,8 +189,12 @@ export function ActivitiesSettings() {
                           <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(activity)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(activity.id)}>
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" onClick={() => askDelete(activity)} disabled={deletingId === activity.id}>
+                            {deletingId === activity.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -192,7 +228,7 @@ export function ActivitiesSettings() {
             <div>
               <label className="text-sm font-medium mb-2 block">Category</label>
               <Select value={formData.categoryId} onValueChange={(v) => setFormData({ ...formData, categoryId: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,14 +271,39 @@ export function ActivitiesSettings() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                 Cancel
               </Button>
-              <Button type="submit">{editingActivity ? "Update" : "Create"}</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingActivity ? (submitting ? "Updating..." : "Update") : (submitting ? "Creating..." : "Create")}
+              </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedActivity ? (
+                <>Are you sure you want to delete <span className="font-medium">{selectedActivity.name}</span>? This cannot be undone.</>
+              ) : (
+                <>Are you sure?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirmDelete} disabled={!!deletingId}>
+              {deletingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

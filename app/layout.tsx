@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/lib/providers"
 import "./globals.css"
 import { Suspense } from "react"
+import { Toaster } from "sonner"
 
 export const metadata: Metadata = {
   title: "Guest Activities",
@@ -25,6 +26,7 @@ export default function RootLayout({
           <Suspense fallback={null}>{children}</Suspense>
         </Providers>
         <Analytics />
+        <Toaster richColors position="top-right" closeButton />
       </body>
     </html>
   )

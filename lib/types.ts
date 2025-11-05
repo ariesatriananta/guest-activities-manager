@@ -58,3 +58,16 @@ export interface ListBookingsParams {
   categoryId?: string
   status?: BookingStatus
 }
+
+// Auth / Users
+export type UserRole = "admin" | "staff"
+
+export interface Profile {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  avatar_img?: string | null
+  created_at: string
+  updated_at: string
+}

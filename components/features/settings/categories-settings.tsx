@@ -9,8 +9,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import type { Category } from "@/lib/types"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function CategoriesSettings() {
   const { data: categories, isLoading } = useCategories()
@@ -21,6 +32,10 @@ export function CategoriesSettings() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({ name: "", description: "" })
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
 
   const handleOpenDialog = (category?: Category) => {
     if (category) {
@@ -37,32 +52,49 @@ export function CategoriesSettings() {
     e.preventDefault()
 
     try {
+      setSubmitting(true)
       if (editingCategory) {
         await updateCategory.mutateAsync({
           id: editingCategory.id,
           name: formData.name,
           description: formData.description || undefined,
         })
+        toast.success("Category updated")
       } else {
         await createCategory.mutateAsync({
           name: formData.name,
           description: formData.description || undefined,
         })
+        toast.success("Category created")
       }
       setDialogOpen(false)
       setFormData({ name: "", description: "" })
     } catch (error) {
       console.error("[v0] Failed to save category:", error)
+      toast.error((error as any)?.message || "Failed to save category")
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this category? This cannot be undone.")) {
-      try {
-        await deleteCategory.mutateAsync(id)
-      } catch (error) {
-        console.error("[v0] Failed to delete category:", error)
-      }
+  const askDelete = (category: Category) => {
+    setSelectedCategory(category)
+    setConfirmOpen(true)
+  }
+
+  const onConfirmDelete = async () => {
+    if (!selectedCategory) return
+    try {
+      setDeletingId(selectedCategory.id)
+      await deleteCategory.mutateAsync(selectedCategory.id)
+      toast.success("Category deleted")
+    } catch (error) {
+      console.error("[v0] Failed to delete category:", error)
+      toast.error((error as any)?.message || "Failed to delete category")
+    } finally {
+      setDeletingId(null)
+      setConfirmOpen(false)
+      setSelectedCategory(null)
     }
   }
 
@@ -113,8 +145,12 @@ export function CategoriesSettings() {
                         <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(category)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={() => askDelete(category)} disabled={deletingId === category.id}>
+                          {deletingId === category.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -153,14 +189,39 @@ export function CategoriesSettings() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
                 Cancel
               </Button>
-              <Button type="submit">{editingCategory ? "Update" : "Create"}</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingCategory ? (submitting ? "Updating..." : "Update") : (submitting ? "Creating..." : "Create")}
+              </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedCategory ? (
+                <>Are you sure you want to delete <span className="font-medium">{selectedCategory.name}</span>? This cannot be undone.</>
+              ) : (
+                <>Are you sure?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirmDelete} disabled={!!deletingId}>
+              {deletingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

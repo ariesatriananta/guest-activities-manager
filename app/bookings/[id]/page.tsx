@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trash2 } from "lucide-react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { use } from "react"
 import type { BookingFormData } from "@/lib/types"
@@ -23,6 +24,8 @@ import {
 } from "@/components/ui/alert-dialog"
 
 export default function EditBookingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
   const { id } = use(params)
   const router = useRouter()
   const { data: booking, isLoading } = useBooking(id)
@@ -98,6 +101,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
+          {role === "admin" && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="icon">
@@ -117,6 +121,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          )}
         </div>
 
         <Card>

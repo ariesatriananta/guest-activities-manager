@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
 import { seed } from "@/lib/data/mockDB"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SessionProvider } from "next-auth/react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -58,14 +59,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem
-      disableTransitionOnChange
-      storageKey="dino-apps-theme"
-    >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </ThemeProvider>
+    <SessionProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+        storageKey="dino-apps-theme"
+      >
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </ThemeProvider>
+    </SessionProvider>
   )
 }
