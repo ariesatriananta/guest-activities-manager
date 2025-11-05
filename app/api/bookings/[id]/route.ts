@@ -3,10 +3,10 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { sql } from "@/lib/db"
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   const rows = await sql<any[]>`
     SELECT id,
            to_char(date, 'YYYY-MM-DD') as date,
@@ -29,10 +29,10 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return NextResponse.json(rows[0] || null)
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   const body = await req.json()
   const {
     date,
@@ -63,12 +63,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
   }
 
+  const endTimeParam = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
   const rows = await sql<any[]>`
     UPDATE bookings
     SET
       date = COALESCE(${date ?? null}::date, date),
       start_time = COALESCE(${startTime ?? null}::time, start_time),
-      end_time = COALESCE(${endTime ?? null}::time, end_time),
+      end_time = COALESCE(${endTimeParam}::time, end_time),
       activity_id = COALESCE(${activityId ?? null}::uuid, activity_id),
       venue_id = COALESCE(${venueId ?? null}::uuid, venue_id),
       guest_name = COALESCE(${guestName ?? null}, guest_name),
@@ -98,11 +99,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(rows[0])
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   await sql`DELETE FROM bookings WHERE id = ${id}`
   return NextResponse.json({ ok: true })
 }
-

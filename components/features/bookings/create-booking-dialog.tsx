@@ -5,6 +5,7 @@ import { BookingForm } from "./booking-form"
 import { useCreateBooking } from "@/lib/hooks/useBookings"
 import { useRouter } from "next/navigation"
 import type { BookingFormData } from "@/lib/types"
+import { todayISOInJakarta, formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 
 interface CreateBookingDialogProps {
   open: boolean
@@ -40,7 +41,7 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
   }
 
   const defaultValues = {
-    date: defaultDate ? defaultDate.toISOString().split("T")[0] : "",
+    date: defaultDate ? formatDateISOInTZ(defaultDate, JAKARTA_TZ) : todayISOInJakarta(),
     startTime: defaultTime || "",
     endTime: "",
     categoryId: "",

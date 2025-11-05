@@ -12,12 +12,12 @@ const updateUserSchema = z.object({
   password: z.string().min(4).optional(),
 })
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  const id = params.id
+  const { id } = await params
   const body = await req.json()
   const parsed = updateUserSchema.safeParse(body)
   if (!parsed.success) {
@@ -44,12 +44,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  const id = params.id
+  const { id } = await params
   const meId = (session.user as any).id as string | undefined
   if (meId && id === meId) {
     return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 })

@@ -3,6 +3,11 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { todayISOInJakarta } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarCmp } from "@/components/ui/calendar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -13,6 +18,7 @@ import { useCategories, useActivitiesByCategory } from "@/lib/hooks/useActivitie
 import { useVenues, useVenue } from "@/lib/hooks/useVenues"
 import { useCheckVenueConflict } from "@/lib/hooks/useBookings"
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,7 +32,7 @@ import type { BookingFormData } from "@/lib/types"
 const bookingSchema = z.object({
   date: z.string().min(1, "Date is required"),
   startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  endTime: z.string().optional(),
   categoryId: z.string().min(1, "Category is required"),
   activityId: z.string().min(1, "Activity is required"),
   venueId: z.string().min(1, "Venue is required"),
@@ -50,6 +56,9 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [showConflictDialog, setShowConflictDialog] = useState(false)
   const [conflictVenueName, setConflictVenueName] = useState("")
   const [conflictDate, setConflictDate] = useState("")
+  const [conflictGuest, setConflictGuest] = useState("")
+  const [conflictActivity, setConflictActivity] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   const { data: categories } = useCategories()
   const { data: venues } = useVenues()
@@ -57,7 +66,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      date: "",
+      date: todayISOInJakarta(),
       startTime: "",
       endTime: "",
       categoryId: "",
@@ -78,7 +87,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const selectedVenueId = form.watch("venueId")
   const selectedDate = form.watch("date")
 
-  const { data: activities } = useActivitiesByCategory(selectedCategoryId)
+  const { data: activities, isLoading: loadingActivities } = useActivitiesByCategory(selectedCategoryId)
   const { data: selectedVenue } = useVenue(selectedVenueId)
   const checkConflict = useCheckVenueConflict()
 
@@ -100,27 +109,36 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   }
 
   const handleFormSubmit = async (data: BookingFormData) => {
+    setSubmitting(true)
     // Check for venue conflict
     if (selectedVenue?.isSingleBookingPerDay && selectedDate && selectedVenueId) {
-      const hasConflict = await checkConflict.mutateAsync({
+      const conflict = await checkConflict.mutateAsync({
         date: selectedDate,
         venueId: selectedVenueId,
         excludeBookingId,
       })
 
-      if (hasConflict) {
+      if (conflict?.hasConflict) {
         setConflictVenueName(selectedVenue.name)
         setConflictDate(selectedDate)
+        setConflictGuest(conflict.guestName || "")
+        setConflictActivity(conflict.activityName || "")
         setShowConflictDialog(true)
+        setSubmitting(false)
         return
       }
     }
 
-    onSubmit(data)
+    try {
+      await onSubmit(data)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <>
+      <MobileDatePickerImpl />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -130,9 +148,25 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <div className="hidden md:block">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start bg-transparent">
+                          {field.value || "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start">
+                        <CalendarCmp
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(d) => field.onChange(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="md:hidden">
+                    <MobileDatePicker value={field.value} onChange={(v) => field.onChange(v)} />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -197,7 +231,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                   <FormLabel>Category</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
@@ -221,10 +255,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                 <FormItem>
                   <FormLabel>Activity</FormLabel>
                   <div className="flex gap-2">
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategoryId}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategoryId || loadingActivities}>
                       <FormControl>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select activity" />
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={loadingActivities ? "Loading..." : "Select activity"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -254,7 +288,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                   <FormLabel>Venue</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select venue" />
                       </SelectTrigger>
                     </FormControl>
@@ -363,11 +397,14 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
           <div className="flex gap-2 justify-end">
             {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
                 Cancel
               </Button>
             )}
-            <Button type="submit">Save Booking</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitting ? "Saving..." : "Save Booking"}
+            </Button>
           </div>
         </form>
       </Form>
@@ -378,7 +415,13 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
             <AlertDialogTitle>Venue Conflict</AlertDialogTitle>
             <AlertDialogDescription>
               The venue <strong>{conflictVenueName}</strong> already has a booking on <strong>{conflictDate}</strong>.
-              This venue only allows one booking per day. Please select a different venue or date.
+              {" "}
+              {conflictGuest && conflictActivity ? (
+                <>
+                  By <strong>{conflictGuest}</strong> do <strong>{conflictActivity}</strong>.
+                </>
+              ) : null}
+              {" "}This venue only allows one booking per day. Please select a different venue or date.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -389,3 +432,38 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
     </>
   )
 }
+
+// Inline mobile date picker using Dialog + Calendar
+function MobileDatePicker({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button variant="outline" className="w-full justify-start bg-transparent" onClick={() => setOpen(true)}>
+        {value || "Pick a date"}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-full h-[90vh] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Select Date</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center">
+            <CalendarCmp
+              mode="single"
+              selected={value ? new Date(value) : undefined}
+              onSelect={(d) => {
+                if (d) {
+                  onChange(formatDateISOInTZ(d, JAKARTA_TZ))
+                  setOpen(false)
+                }
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+// Placeholder component to ensure Dialog portals mount on client
+function MobileDatePickerImpl() { return null }
+

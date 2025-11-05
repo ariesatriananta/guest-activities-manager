@@ -6,10 +6,10 @@ import { z } from "zod"
 
 const updateSchema = z.object({ name: z.string().min(1).optional(), location: z.string().optional(), capacity: z.number().int().min(1).optional(), isSingleBookingPerDay: z.boolean().optional() })
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 })
@@ -27,11 +27,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(rows[0])
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   await sql`DELETE FROM venues WHERE id = ${id}`
   return NextResponse.json({ ok: true })
 }
-

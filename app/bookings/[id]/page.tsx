@@ -134,16 +134,16 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
               defaultValues={{
                 date: booking.date,
                 startTime: booking.startTime,
-                endTime: booking.endTime,
+                endTime: booking.endTime || "",
                 categoryId: activity?.categoryId || "",
                 activityId: booking.activityId,
                 venueId: booking.venueId,
                 guestName: booking.guestName,
                 suiteNumber: booking.suiteNumber,
                 pax: booking.pax,
-                gaName: booking.gaName,
-                driverName: booking.driverName,
-                remark: booking.remark,
+                gaName: booking.gaName || "",
+                driverName: booking.driverName || "",
+                remark: booking.remark || "",
                 status: booking.status,
               }}
               onSubmit={handleSubmit}

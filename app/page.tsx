@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Users, AlertTriangle, LayoutGrid } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
+import { todayISOInJakarta } from "@/lib/utils"
 import type { BookingStatus } from "@/lib/types"
 import { NavLayout } from "@/components/layout/nav-layout"
 
@@ -17,7 +18,7 @@ export default function DashboardPage() {
   const { data: activities } = useActivities()
   const { data: venues } = useVenues()
 
-  const today = new Date().toISOString().split("T")[0]
+  const today = todayISOInJakarta()
 
   const todayBookings = useMemo(() => {
     if (!bookings) return []
@@ -273,4 +274,3 @@ export default function DashboardPage() {
     </NavLayout>
   )
 }
-

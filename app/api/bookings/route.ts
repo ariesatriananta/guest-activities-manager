@@ -78,11 +78,12 @@ export async function POST(req: Request) {
     }
   }
 
+  const endTimeParam = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
   const rows = await sql<any[]>`
     INSERT INTO bookings (
       date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status
     ) VALUES (
-      ${date}, ${startTime}::time, ${endTime}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${remark || null}, ${status}
+      ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${remark || null}, ${status}
     )
     RETURNING id,
       to_char(date, 'YYYY-MM-DD') as date,
