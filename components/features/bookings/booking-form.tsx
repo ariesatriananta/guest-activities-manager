@@ -4,10 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { todayISOInJakarta } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarCmp } from "@/components/ui/calendar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
+import { DateField } from "@/components/ui/date-field"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -138,7 +135,6 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
   return (
     <>
-      <MobileDatePickerImpl />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,25 +144,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date</FormLabel>
-                  <div className="hidden md:block">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start bg-transparent">
-                          {field.value || "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start">
-                        <CalendarCmp
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(d) => field.onChange(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="md:hidden">
-                    <MobileDatePicker value={field.value} onChange={(v) => field.onChange(v)} />
-                  </div>
+                  <DateField value={field.value} onChange={field.onChange} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -434,36 +412,5 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 }
 
 // Inline mobile date picker using Dialog + Calendar
-function MobileDatePicker({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button variant="outline" className="w-full justify-start bg-transparent" onClick={() => setOpen(true)}>
-        {value || "Pick a date"}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-full h-[90vh] sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Select Date</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center">
-            <CalendarCmp
-              mode="single"
-              selected={value ? new Date(value) : undefined}
-              onSelect={(d) => {
-                if (d) {
-                  onChange(formatDateISOInTZ(d, JAKARTA_TZ))
-                  setOpen(false)
-                }
-              }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-}
-
-// Placeholder component to ensure Dialog portals mount on client
-function MobileDatePickerImpl() { return null }
+// cleaned: single Popover calendar pattern for all devices
 

@@ -23,6 +23,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { DateField } from "@/components/ui/date-field"
 
 function ReportsContent() {
   const [dateFrom, setDateFrom] = useState("")
@@ -191,21 +192,11 @@ function ReportsContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Date From</label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background"
-              />
+              <DateField value={dateFrom} onChange={setDateFrom} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Date To</label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background"
-              />
+              <DateField value={dateTo} onChange={setDateTo} />
             </div>
             <div className="flex items-end">
               <Button

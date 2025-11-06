@@ -8,9 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarCmp } from "@/components/ui/calendar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DateField } from "@/components/ui/date-field"
+ 
 import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, Eye } from "lucide-react"
@@ -100,48 +99,12 @@ function BookingsContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Date From</label>
-              <div className="hidden md:block">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full bg-transparent justify-start">
-                      {dateFrom || "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start">
-                    <CalendarCmp
-                      mode="single"
-                      selected={dateFrom ? new Date(dateFrom) : undefined}
-                      onSelect={(d) => setDateFrom(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="md:hidden">
-                <MobileDatePicker value={dateFrom} onChange={setDateFrom} />
-              </div>
+              <DateField value={dateFrom} onChange={setDateFrom} />
             </div>
 
             <div>
               <label className="text-sm font-medium mb-2 block">Date To</label>
-              <div className="hidden md:block">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full bg-transparent justify-start">
-                      {dateTo || "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start">
-                    <CalendarCmp
-                      mode="single"
-                      selected={dateTo ? new Date(dateTo) : undefined}
-                      onSelect={(d) => setDateTo(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="md:hidden">
-                <MobileDatePicker value={dateTo} onChange={setDateTo} />
-              </div>
+              <DateField value={dateTo} onChange={setDateTo} />
             </div>
 
             <div>
@@ -289,30 +252,5 @@ export default function BookingsPage() {
     <NavLayout>
       <BookingsContent />
     </NavLayout>
-  )
-}
-
-function MobileDatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button variant="outline" className="w-full justify-start bg-transparent" onClick={() => setOpen(true)}>
-        {value || "Pick a date"}
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-full h-[90vh] sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Select Date</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center">
-            <CalendarCmp
-              mode="single"
-              selected={value ? new Date(value) : undefined}
-              onSelect={(d) => { if (d) { onChange(formatDateISOInTZ(d, JAKARTA_TZ)); setOpen(false) } }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
   )
 }
