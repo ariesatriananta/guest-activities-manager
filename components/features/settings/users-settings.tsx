@@ -136,7 +136,7 @@ export function UsersSettings() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle>Users</CardTitle>
               <CardDescription>Manage application users (admin only)</CardDescription>
@@ -148,6 +148,7 @@ export function UsersSettings() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -189,6 +190,7 @@ export function UsersSettings() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

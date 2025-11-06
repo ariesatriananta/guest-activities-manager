@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import FullCalendar from "@fullcalendar/react"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
+import listPlugin from "@fullcalendar/list"
 import interactionPlugin from "@fullcalendar/interaction"
 import type { EventClickArg, DateSelectArg } from "@fullcalendar/core"
 import { useBookings } from "@/lib/hooks/useBookings"
@@ -26,6 +27,15 @@ function CalendarContent() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
 
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [venueFilter, setVenueFilter] = useState<string>("all")
@@ -91,7 +101,7 @@ function CalendarContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
       <div>
-        <h2 className="text-3xl font-bold">Calendar</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold">Calendar</h2>
         <p className="text-muted-foreground">View and manage bookings in calendar format</p>
       </div>
 
@@ -166,14 +176,20 @@ function CalendarContent() {
         <CardContent className="p-6">
           <div className="calendar-container">
             <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
+              key={isMobile ? "m" : "d"}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+              initialView={isMobile ? "listWeek" : "dayGridMonth"}
               timeZone="Asia/Jakarta"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
+              headerToolbar={
+                isMobile
+                  ? { left: "prev,next", center: "title", right: "today,dayGridMonth,listWeek" }
+                  : { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" }
+              }
+              buttonText={
+                isMobile
+                  ? { today: "Today", month: "Month", week: "Week", day: "Day" }
+                  : undefined
+              }
               events={calendarEvents}
               eventClick={handleEventClick}
               select={handleDateSelect}

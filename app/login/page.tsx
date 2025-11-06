@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -31,12 +31,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Masuk</CardTitle>
-          <CardDescription>Akses aplikasi Guest Activities</CardDescription>
-        </CardHeader>
+    <div className="min-h-screen flex flex-col p-4 bg-background">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="flex justify-center mb-3">
+          {/* Logo center on login */}
+          <div className="inline-flex">
+            {/* Avoid layout shift by keeping consistent height */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo/logo-main.png" alt="Amanjiwo" className="h-10 w-auto block dark:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo/logo-white.png" alt="Amanjiwo" className="h-10 w-auto hidden dark:block" />
+          </div>
+          </div>
+          <p className="text-center text-sm text-muted-foreground mb-6">Guest Activities Bookings</p>
+          <Card className="w-full">
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>
             <div>
@@ -53,8 +62,18 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
-      </Card>
+          </Card>
+        </div>
+      </div>
+      <footer className="pt-6">
+        <div className="max-w-md mx-auto">
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
+          <div className="text-center text-xs text-muted-foreground space-y-1">
+            <p>© {new Date().getFullYear()} Amanjiwo Magelang. All rights reserved.</p>
+            <p>Designed exclusively for Melissa — Guest Activities Manager.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
-

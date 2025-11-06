@@ -193,3 +193,30 @@
 /* Hide horizontal/vertical scrollbars but keep scroll behavior */
 .no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Mobile tweaks for FullCalendar toolbar and typography */
+@media (max-width: 640px) {
+  /* Slightly smaller base font for mobile */
+  body { font-size: 0.9375rem; }
+
+  .calendar-container .fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .calendar-container .fc .fc-toolbar-title {
+    font-size: 1rem;
+  }
+  .calendar-container .fc .fc-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .calendar-container .fc .fc-toolbar-chunk:last-child {
+    flex-basis: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .calendar-container .fc .fc-col-header-cell-cushion,
+  .calendar-container .fc .fc-daygrid-day-number {
+    font-size: 0.75rem;
+  }
+}

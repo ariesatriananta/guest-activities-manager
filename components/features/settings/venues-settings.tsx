@@ -120,7 +120,7 @@ export function VenuesSettings() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle>Venues</CardTitle>
               <CardDescription>Manage available venues</CardDescription>
@@ -132,6 +132,7 @@ export function VenuesSettings() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -179,6 +180,7 @@ export function VenuesSettings() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

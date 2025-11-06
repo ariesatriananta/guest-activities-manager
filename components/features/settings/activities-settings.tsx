@@ -140,7 +140,7 @@ export function ActivitiesSettings() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle>Activities</CardTitle>
               <CardDescription>Manage available activities</CardDescription>
@@ -152,6 +152,7 @@ export function ActivitiesSettings() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,6 +205,7 @@ export function ActivitiesSettings() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

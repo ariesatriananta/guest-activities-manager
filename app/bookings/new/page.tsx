@@ -45,7 +45,7 @@ export default function NewBookingPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">New Booking</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">New Booking</h1>
             <p className="text-muted-foreground">Create a new guest activity booking</p>
           </div>
         </div>

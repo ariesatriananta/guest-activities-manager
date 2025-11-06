@@ -232,7 +232,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Activity</FormLabel>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 max-sm:flex-col">
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategoryId || loadingActivities}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -373,7 +373,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
             )}
           />
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end max-sm:flex-col max-sm:items-stretch">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
                 Cancel

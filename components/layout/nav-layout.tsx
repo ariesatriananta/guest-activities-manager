@@ -8,6 +8,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Logo } from "@/components/logo"
 import { useSession, signOut } from "next-auth/react"
 import {
   DropdownMenu,
@@ -60,16 +61,18 @@ export function NavLayout({ children }: NavLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
           <div className="flex items-center justify-between h-full">
             <div>
-              <h1 className="text-2xl font-bold">Amanjiwo</h1>
+              <Link href="/" aria-label="Go to Dashboard" className="inline-flex items-center">
+                <Logo />
+              </Link>
               <p className="text-sm text-muted-foreground">Guest Activities Bookings</p>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
               {session?.user ? <UserMenu /> : null}
-              <Button asChild>
+              <Button asChild className="max-sm:h-9 max-sm:px-3">
                 <Link href="/bookings/new">
                   <Plus className="h-4 w-4 mr-2" />
-                  Booking
+                  <span className="max-sm:hidden">Booking</span>
                 </Link>
               </Button>
             </div>
@@ -146,7 +149,7 @@ export function NavLayout({ children }: NavLayoutProps) {
 
       <footer className="border-t border-border bg-card mt-12">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
             <p>Guest Activities Manager © 2025</p>
             <ThemeBadge />
           </div>

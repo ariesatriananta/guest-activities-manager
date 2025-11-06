@@ -175,9 +175,9 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={booking.id}
-                      className="flex items-start gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                     >
-                      <div className="flex-shrink-0 w-20 text-center">
+                      <div className="flex-shrink-0 sm:w-20 w-full text-center sm:text-left">
                         <div className="text-sm font-medium">{booking.startTime}</div>
                         <div className="text-xs text-muted-foreground">{booking.endTime}</div>
                       </div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm" asChild>
+                      <Button variant="outline" size="sm" asChild className="sm:ml-auto">
                         <Link href={`/bookings/${booking.id}`}>View</Link>
                       </Button>
                     </div>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={booking.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <div className="text-center min-w-[80px]">
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild className="sm:ml-auto">
                         <Link href={`/bookings/${booking.id}`}>View</Link>
                       </Button>
                     </div>

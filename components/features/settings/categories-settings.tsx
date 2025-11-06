@@ -102,7 +102,7 @@ export function CategoriesSettings() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle>Activity Categories</CardTitle>
               <CardDescription>Manage activity categories</CardDescription>
@@ -114,6 +114,7 @@ export function CategoriesSettings() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -159,6 +160,7 @@ export function CategoriesSettings() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
