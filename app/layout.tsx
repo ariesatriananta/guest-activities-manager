@@ -20,11 +20,10 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      { url: "/placeholder-logo.png", type: "image/png", sizes: "192x192" },
-      { url: "/placeholder.jpg", type: "image/jpeg", sizes: "512x512" },
+      { url: "/icon.svg" },
     ],
     apple: [
-      { url: "/placeholder-logo.png" },
+      { url: "/icons/icon-180.png", sizes: "180x180" },
     ],
   },
 }
