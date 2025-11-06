@@ -26,6 +26,27 @@ export function NavLayout({ children }: NavLayoutProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const role = (session?.user as any)?.role as string | undefined
+  const navRef = React.useRef<HTMLDivElement>(null)
+  const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 })
+  const [noTransition, setNoTransition] = React.useState(true)
+
+  React.useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const update = () => {
+      const active = el.querySelector<HTMLElement>("[data-active='true']")
+      if (!active) return
+      const targetLeft = active.offsetLeft - (el.clientWidth - active.clientWidth) / 2
+      el.scrollTo({ left: Math.max(targetLeft, 0), behavior: "smooth" })
+      setIndicator({ left: active.offsetLeft, width: active.offsetWidth })
+    }
+    update()
+    // enable animation after first paint so it doesn't animate from 0
+    requestAnimationFrame(() => setNoTransition(false))
+    const onResize = () => update()
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [pathname])
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/"
@@ -35,12 +56,12 @@ export function NavLayout({ children }: NavLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <div className="flex items-center justify-between">
+      <header className="border-b border-border bg-card sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm h-20 md:h-24">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
+          <div className="flex items-center justify-between h-full">
             <div>
-              <h1 className="text-2xl font-bold">Guest Activities</h1>
-              <p className="text-sm text-muted-foreground">Demo Apps for <b>Melissa</b> at AmanJiwo</p>
+              <h1 className="text-2xl font-bold">Amanjiwo</h1>
+              <p className="text-sm text-muted-foreground">Guest Activities Bookings</p>
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
@@ -48,7 +69,7 @@ export function NavLayout({ children }: NavLayoutProps) {
               <Button asChild>
                 <Link href="/bookings/new">
                   <Plus className="h-4 w-4 mr-2" />
-                  New Booking
+                  Booking
                 </Link>
               </Button>
             </div>
@@ -57,16 +78,14 @@ export function NavLayout({ children }: NavLayoutProps) {
       </header>
 
       {/* Navigation */}
-      <nav className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="flex gap-1 overflow-x-auto scrollbar-none">
+      <nav className="border-b border-border bg-card sticky top-20 md:top-24 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 md:py-2">
+          <div ref={navRef} className="relative flex items-center gap-1 overflow-x-auto no-scrollbar">
             <Link href="/">
               <Button
                 variant="ghost"
-                className={cn(
-                  "rounded-none border-b-2",
-                  isActive("/") && pathname === "/" ? "border-primary" : "border-transparent hover:border-muted",
-                )}
+                className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/") && pathname === "/" ? "text-primary" : undefined)}
+                data-active={isActive("/") && pathname === "/" ? "true" : undefined}
               >
                 Dashboard
               </Button>
@@ -74,10 +93,8 @@ export function NavLayout({ children }: NavLayoutProps) {
             <Link href="/calendar">
               <Button
                 variant="ghost"
-                className={cn(
-                  "rounded-none border-b-2",
-                  isActive("/calendar") ? "border-primary" : "border-transparent hover:border-muted",
-                )}
+                className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/calendar") ? "text-primary" : undefined)}
+                data-active={isActive("/calendar") ? "true" : undefined}
               >
                 Calendar
               </Button>
@@ -85,10 +102,8 @@ export function NavLayout({ children }: NavLayoutProps) {
             <Link href="/bookings">
               <Button
                 variant="ghost"
-                className={cn(
-                  "rounded-none border-b-2",
-                  isActive("/bookings") ? "border-primary" : "border-transparent hover:border-muted",
-                )}
+                className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/bookings") ? "text-primary" : undefined)}
+                data-active={isActive("/bookings") ? "true" : undefined}
               >
                 Bookings
               </Button>
@@ -97,10 +112,8 @@ export function NavLayout({ children }: NavLayoutProps) {
             <Link href="/reports">
               <Button
                 variant="ghost"
-                className={cn(
-                  "rounded-none border-b-2",
-                  isActive("/reports") ? "border-primary" : "border-transparent hover:border-muted",
-                )}
+                className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/reports") ? "text-primary" : undefined)}
+                data-active={isActive("/reports") ? "true" : undefined}
               >
                 Reports
               </Button>
@@ -110,15 +123,20 @@ export function NavLayout({ children }: NavLayoutProps) {
             <Link href="/settings">
               <Button
                 variant="ghost"
-                className={cn(
-                  "rounded-none border-b-2",
-                  isActive("/settings") ? "border-primary" : "border-transparent hover:border-muted",
-                )}
+                className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/settings") ? "text-primary" : undefined)}
+                data-active={isActive("/settings") ? "true" : undefined}
               >
                 Settings
               </Button>
             </Link>
             )}
+            <div
+              className={cn(
+                "pointer-events-none absolute bottom-0 h-[2px] bg-primary rounded",
+                noTransition ? "transition-none" : "transition-all duration-300 ease-out",
+              )}
+              style={{ left: indicator.left, width: indicator.width }}
+            />
           </div>
         </div>
       </nav>
@@ -217,3 +235,4 @@ function UserMenu() {
     </DropdownMenu>
   )
 }
+
