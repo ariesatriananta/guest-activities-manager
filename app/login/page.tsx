@@ -31,8 +31,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 bg-background">
-      <div className="flex-1 flex items-center justify-center">
+    <div className="min-h-svh flex flex-col p-4 bg-background">
+      <div className="flex-1 flex justify-center items-start pt-8 sm:pt-15">
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-3">
           {/* Logo center on login */}
@@ -44,7 +44,7 @@ export default function LoginPage() {
             <img src="/logo/logo-white.png" alt="Amanjiwo" className="h-10 w-auto hidden dark:block" />
           </div>
           </div>
-          <p className="text-center text-sm text-muted-foreground mb-6">Guest Activities Bookings</p>
+          <p className="text-center text-sm text-muted-foreground mb-4 sm:mb-6">Guest Activities Bookings</p>
           <Card className="w-full">
         <CardContent>
           <form className="space-y-4" onSubmit={onSubmit}>
