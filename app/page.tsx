@@ -82,9 +82,9 @@ export default function DashboardPage() {
 
   return (
     <NavLayout>
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                       </div>
 
                       <Button variant="outline" size="sm" asChild className="sm:ml-auto">
-                        <Link href={`/bookings/${booking.id}`}>View</Link>
+                        <Link prefetch={false} href={`/bookings/${booking.id}`}>View</Link>
                       </Button>
                     </div>
                   )
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" asChild className="sm:ml-auto">
-                        <Link href={`/bookings/${booking.id}`}>View</Link>
+                        <Link prefetch={false} href={`/bookings/${booking.id}`}>View</Link>
                       </Button>
                     </div>
                   )

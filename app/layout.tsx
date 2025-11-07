@@ -14,10 +14,6 @@ export const metadata: Metadata = {
   description: "Hotel guest daily activities management system",
   generator: "dino-apps",
   manifest: "/manifest.webmanifest",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" },
-  ],
   icons: {
     icon: [
       { url: "/icon.svg" },
@@ -32,6 +28,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+  ],
 }
 
 export default function RootLayout({

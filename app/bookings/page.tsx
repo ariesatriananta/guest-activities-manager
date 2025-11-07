@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useBookings } from "@/lib/hooks/useBookings"
 import { useCategories } from "@/lib/hooks/useActivities"
@@ -8,13 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { DateField } from "@/components/ui/date-field"
- 
-import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Eye } from "lucide-react"
+import { Download, Eye, FilterX } from "lucide-react"
 import Link from "next/link"
-import { useState, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
+import { useMemo, useState, useEffect } from "react"
 import { NavLayout } from "@/components/layout/nav-layout"
 import type { BookingStatus } from "@/lib/types"
 
@@ -24,13 +23,20 @@ function BookingsContent() {
   const [venueFilter, setVenueFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
-
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [search, setSearch] = useState("")
   const { data: bookings, isLoading } = useBookings()
   const { data: categories } = useCategories()
   const { data: venues } = useVenues()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
+
+    const venueMap = new Map<string, string>()
+    venues?.forEach((v) => venueMap.set(v.id, v.name))
+    const q = search.trim().toLowerCase()
 
     return bookings.filter((booking) => {
       if (dateFrom && booking.date < dateFrom) return false
@@ -42,9 +48,58 @@ function BookingsContent() {
         return true
       }
 
+      if (q) {
+        const venueName = venueMap.get(booking.venueId) || ""
+        const hay = `${booking.guestName} ${booking.suiteNumber} ${venueName}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+
       return true
     })
-  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter])
+  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, venues, search])
+
+  // Derive active filter count for badge
+  const activeFilterCount = useMemo(() => {
+    let n = 0
+    if (search.trim()) n++
+    if (dateFrom) n++
+    if (dateTo) n++
+    if (venueFilter !== "all") n++
+    if (categoryFilter !== "all") n++
+    if (statusFilter !== "all") n++
+    return n
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter])
+
+  // Load filters from URL once on mount
+  useEffect(() => {
+    const q = searchParams.get("q") || ""
+    const from = searchParams.get("from") || ""
+    const to = searchParams.get("to") || ""
+    const venue = searchParams.get("venue") || "all"
+    const cat = searchParams.get("cat") || "all"
+    const status = (searchParams.get("status") as BookingStatus | null) || null
+    if (q) setSearch(q)
+    if (from) setDateFrom(from)
+    if (to) setDateTo(to)
+    if (venue) setVenueFilter(venue)
+    if (cat) setCategoryFilter(cat)
+    if (status) setStatusFilter(status)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sync filters to URL (shallow)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (search.trim()) params.set("q", search.trim())
+    if (dateFrom) params.set("from", dateFrom)
+    if (dateTo) params.set("to", dateTo)
+    if (venueFilter !== "all") params.set("venue", venueFilter)
+    if (categoryFilter !== "all") params.set("cat", categoryFilter)
+    if (statusFilter !== "all") params.set("status", statusFilter)
+    const qs = params.toString()
+    const url = qs ? `?${qs}` : ""
+    router.replace(`/bookings${url}`, { scroll: false })
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, router])
 
   const exportToCSV = () => {
     if (!filteredBookings || !venues) return
@@ -84,101 +139,83 @@ function BookingsContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold">Bookings</h2>
-        <p className="text-muted-foreground">Manage guest activity bookings</p>
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold">Bookings</h2>
+          <p className="text-muted-foreground">Manage guest activity bookings</p>
+        </div>
+        <Button onClick={exportToCSV} size="sm" variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
-      <Card>
+      {/* One-line toolbar (all screens): search + filters (Sheet) + clear */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search guest / suite / venue"
+          className="flex-1 min-w-[160px]"
+        />
+        <FiltersSheet
+          open={filtersOpen}
+          onOpenChange={(o) => setFiltersOpen(o)}
+          values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter, status: statusFilter }}
+          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || ""); setVenueFilter(v.venueId); setCategoryFilter(v.categoryId); setStatusFilter(v.status); }}
+          venues={venues || []}
+          categories={categories || []}
+          activeCount={activeFilterCount}
+        />
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label="Clear Quick Filters"
+          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setVenueFilter("all"); setCategoryFilter("all"); setStatusFilter("all") }}
+        >
+          <FilterX className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Desktop uses the same Sheet-based filters; card removed for consistency */}
+
+      {/* Mobile list (compact) */}
+      <Card className="sm:hidden">
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter bookings by date, venue, category, or status</CardDescription>
+          <CardTitle>Bookings</CardTitle>
+          <CardDescription>{filteredBookings?.length || 0} booking(s) found</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date From</label>
-              <DateField value={dateFrom} onChange={setDateFrom} />
+          {isLoading ? (
+            <div className="text-center text-muted-foreground">Loading...</div>
+          ) : (filteredBookings?.length || 0) === 0 ? (
+            <div className="text-center text-muted-foreground">No bookings found</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredBookings.map((booking) => {
+                const venue = venues?.find((v) => v.id === booking.venueId)
+                return (
+                  <Link prefetch={false} href={`/bookings/${booking.id}`} key={booking.id} className="block rounded-lg border border-border p-3 hover:bg-accent/50">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">{booking.date}</div>
+                      <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{booking.startTime} - {booking.endTime}</div>
+                    <div className="mt-1 text-sm">
+                      <div className="font-medium truncate">{booking.guestName}</div>
+                      <div className="text-muted-foreground truncate">{venue?.name}</div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date To</label>
-              <DateField value={dateTo} onChange={setDateTo} />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Venue</label>
-              <Select value={venueFilter} onValueChange={setVenueFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All venues" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All venues</SelectItem>
-                  {venues?.map((venue) => (
-                    <SelectItem key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Category</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as BookingStatus | "all")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDateFrom("")
-                setDateTo("")
-                setVenueFilter("all")
-                setCategoryFilter("all")
-                setStatusFilter("all")
-              }}
-            >
-              Clear Filters
-            </Button>
-            <Button variant="outline" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      {/* Desktop table */}
+      <Card className="hidden sm:block">
         <CardHeader>
           <CardTitle>All Bookings</CardTitle>
           <CardDescription>{filteredBookings?.length || 0} booking(s) found</CardDescription>
@@ -229,7 +266,7 @@ function BookingsContent() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/bookings/${booking.id}`}>
+                            <Link prefetch={false} href={`/bookings/${booking.id}`}>
                               <Eye className="h-4 w-4" />
                             </Link>
                           </Button>
@@ -254,3 +291,12 @@ export default function BookingsPage() {
     </NavLayout>
   )
 }
+
+
+
+
+
+
+
+
+

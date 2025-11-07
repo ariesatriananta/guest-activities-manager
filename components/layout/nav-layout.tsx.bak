@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import React from "react"
 
 import { Button } from "@/components/ui/button"
-import { Plus, Moon, Sun, Cog } from "lucide-react"
+import { Plus, Moon, Sun, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -19,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
-import { ClientOnly } from "@/components/client-only"
 
 interface NavLayoutProps {
   children: React.ReactNode
@@ -32,7 +31,7 @@ export function NavLayout({ children }: NavLayoutProps) {
   const navRef = React.useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 })
   const [noTransition, setNoTransition] = React.useState(true)
-  
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
 
   React.useEffect(() => {
     const el = navRef.current
@@ -60,42 +59,56 @@ export function NavLayout({ children }: NavLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header suppressHydrationWarning className="border-b border-border bg-card sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm h-16 md:h-20">
+      <header className="border-b border-border bg-card sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm h-20 md:h-24">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
           <div className="flex items-center justify-between h-full">
             <div>
               <Link href="/" aria-label="Go to Dashboard" className="inline-flex items-center">
                 <Logo />
               </Link>
-              <p className="text-sm text-muted-foreground max-sm:hidden">Guest Activities Bookings</p>
+              <p className="text-sm text-muted-foreground">Guest Activities Bookings</p>
             </div>
-            <ClientOnly>
-              <div className="flex items-center gap-2">
-                {session?.user ? <UserMenu /> : null}
-                {/* Admin settings shortcut on mobile */}
-                {role === "admin" ? (
-                  <Button asChild size="icon-sm" variant="outline" className="sm:hidden">
-                    <Link href="/settings" aria-label="Settings">
-                      <Cog className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                ) : null}
-                <Button asChild className="hidden sm:inline-flex">
-                  <Link href="/bookings/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="max-sm:hidden">Booking</span>
-                  </Link>
-                </Button>
-              </div>
-            </ClientOnly>
+            <div className="flex items-center gap-2">
+              {session?.user ? <UserMenu /> : null}
+              {/* Mobile nav toggle */}
+              <button
+                type="button"
+                className="sm:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background hover:bg-accent/50"
+                aria-label={mobileNavOpen ? "Hide navigation" : "Show navigation"}
+                aria-expanded={mobileNavOpen}
+                onClick={() => setMobileNavOpen((v) => !v)}
+              >
+                {mobileNavOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              <Button asChild className="hidden sm:inline-flex">
+                <Link href="/bookings/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="max-sm:hidden">Booking</span>
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav suppressHydrationWarning className="hidden sm:block border-b border-border bg-card sticky top-20 md:top-24 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 md:py-2">
-          <div ref={navRef} className="relative flex items-center gap-1 overflow-x-auto no-scrollbar">
+      <nav className="border-b border-border bg-card sticky top-20 md:top-24 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
+        <div
+          className={cn(
+            "max-w-7xl mx-auto px-4 md:px-8 transition-all duration-300",
+            mobileNavOpen ? "py-2" : "py-0",
+            "sm:py-2",
+          )}
+        >
+          <div
+            className={cn(
+              "grid transition-all duration-300 sm:block",
+              mobileNavOpen ? "grid-rows-[1fr] opacity-100 translate-y-0" : "grid-rows-[0fr] opacity-0 -translate-y-1",
+              "sm:opacity-100 sm:translate-y-0 sm:grid-rows-[1fr]",
+            )}
+          >
+            <div className="overflow-hidden">
+              <div ref={navRef} className="relative flex items-center gap-1 overflow-x-auto no-scrollbar">
                 <Link href="/">
                   <Button
                     variant="ghost"
@@ -152,6 +165,8 @@ export function NavLayout({ children }: NavLayoutProps) {
                   )}
                   style={{ left: indicator.left, width: indicator.width }}
                 />
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -162,7 +177,7 @@ export function NavLayout({ children }: NavLayoutProps) {
       <footer className="border-t border-border bg-card mt-12">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-            <p>Guest Activities Manager © 2025</p>
+            <p>Guest Activities Manager Â© 2025</p>
             <ThemeBadge />
           </div>
         </div>
@@ -271,4 +286,5 @@ function UserMenu() {
     </DropdownMenu>
   )
 }
+
 

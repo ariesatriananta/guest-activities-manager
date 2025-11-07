@@ -5,6 +5,7 @@ import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { FilterX } from "lucide-react"
 import { Download } from "lucide-react"
 import { NavLayout } from "@/components/layout/nav-layout"
 import { useMemo, useState } from "react"
@@ -34,6 +35,7 @@ function ReportsContent() {
   const { data: activities } = useActivities()
   const { data: categories } = useCategories()
   const { data: venues } = useVenues()
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
@@ -171,7 +173,7 @@ function ReportsContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold">Reports & Analytics</h2>
@@ -185,11 +187,25 @@ function ReportsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Date Range Filter</CardTitle>
-          <CardDescription>Filter reports by date range</CardDescription>
+          <div className="flex items-center justify-between">
+            <CardTitle>Date Range Filter</CardTitle>
+            <div className="sm:hidden flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setFiltersOpen((v) => !v)}>
+                {filtersOpen ? "Hide" : "Show"}
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Clear Filters"
+                onClick={() => { setDateFrom(""); setDateTo("") }}
+              >
+                <FilterX className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={"grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 " + (filtersOpen ? "" : "max-sm:hidden") }>
             <div>
               <label className="text-sm font-medium mb-2 block">Date From</label>
               <DateField value={dateFrom} onChange={setDateFrom} />
@@ -200,11 +216,9 @@ function ReportsContent() {
             </div>
             <div className="flex items-end">
               <Button
+                className="hidden sm:inline-flex"
                 variant="outline"
-                onClick={() => {
-                  setDateFrom("")
-                  setDateTo("")
-                }}
+                onClick={() => { setDateFrom(""); setDateTo("") }}
               >
                 Clear Filter
               </Button>

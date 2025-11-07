@@ -12,7 +12,7 @@ function SettingsContent() {
   const { data: session } = useSession()
   const role = (session?.user as any)?.role as string | undefined
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold">Settings</h2>
         <p className="text-muted-foreground">Manage categories, activities, and venues</p>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, signOut, useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const { data: session } = useSession()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -21,6 +22,10 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    // Jika sudah login sebagai user lain, signOut dulu agar tidak carried-over
+    if (session?.user?.email && session.user.email !== email) {
+      await signOut({ redirect: false })
+    }
     const res = await signIn("credentials", { redirect: false, email, password, callbackUrl })
     setLoading(false)
     if (res?.ok) {

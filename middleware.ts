@@ -6,8 +6,12 @@ export default withAuth({
     authorized: ({ token, req }) => {
       const pathname = req.nextUrl.pathname
       if (!token) return false
-      if (pathname.startsWith("/settings") || pathname.startsWith("/reports")) {
+      if (pathname.startsWith("/settings")) {
         return (token as any).role === "admin"
+      }
+      if (pathname.startsWith("/reports")) {
+        const role = (token as any).role
+        return role === "admin" || role === "staff"
       }
       return true
     },

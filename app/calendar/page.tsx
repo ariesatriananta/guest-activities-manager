@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { DateField } from "@/components/ui/date-field"
 import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { FilterX } from "lucide-react"
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { CreateBookingDialog } from "@/components/features/bookings/create-booking-dialog"
 import { NavLayout } from "@/components/layout/nav-layout"
@@ -41,6 +42,7 @@ function CalendarContent() {
   const [venueFilter, setVenueFilter] = useState<string>("all")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const { data: bookings } = useBookings()
   const { data: categories } = useCategories()
@@ -99,7 +101,7 @@ function CalendarContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold">Calendar</h2>
         <p className="text-muted-foreground">View and manage bookings in calendar format</p>
@@ -107,11 +109,25 @@ function CalendarContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter calendar events</CardDescription>
+          <div className="flex items-center justify-between">
+            <CardTitle>Filters</CardTitle>
+            <div className="sm:hidden flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setFiltersOpen((v) => !v)}>
+                {filtersOpen ? "Hide" : "Show"}
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Clear Filters"
+                onClick={() => { setCategoryFilter("all"); setVenueFilter("all"); setDateFrom(""); setDateTo("") }}
+              >
+                <FilterX className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className={"grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 " + (filtersOpen ? "" : "max-sm:hidden") }>
             <div>
               <label className="text-sm font-medium mb-2 block">Category</label>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -159,7 +175,7 @@ function CalendarContent() {
 
           <Button
             variant="outline"
-            className="mt-4 bg-transparent"
+            className="mt-4 bg-transparent hidden sm:inline-flex"
             onClick={() => {
               setCategoryFilter("all")
               setVenueFilter("all")
@@ -190,6 +206,23 @@ function CalendarContent() {
                   ? { today: "Today", month: "Month", week: "Week", day: "Day" }
                   : undefined
               }
+              eventContent={(arg) => {
+                const b = arg.event.extendedProps.booking as any
+                const venueName = b?.venueId && Array.isArray(venues) ? (venues.find((v) => v.id === b.venueId)?.name || "") : ""
+                return (
+                  <div className="text-xs sm:text-sm">
+                    <span className="font-medium">{arg.timeText}</span>
+                    <span className="mx-1">•</span>
+                    <span>{b?.guestName ?? arg.event.title}</span>
+                    {venueName ? (
+                      <>
+                        <span className="mx-1">•</span>
+                        <span className="text-muted-foreground">{venueName}</span>
+                      </>
+                    ) : null}
+                  </div>
+                )
+              }}
               events={calendarEvents}
               eventClick={handleEventClick}
               select={handleDateSelect}
