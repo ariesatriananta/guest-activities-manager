@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useBookings } from "@/lib/hooks/useBookings"
-import { useCategories } from "@/lib/hooks/useActivities"
+import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +27,7 @@ function BookingsContent() {
   const [search, setSearch] = useState("")
   const { data: bookings, isLoading } = useBookings()
   const { data: categories } = useCategories()
+  const { data: activities } = useActivities()
   const { data: venues } = useVenues()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,6 +37,8 @@ function BookingsContent() {
 
     const venueMap = new Map<string, string>()
     venues?.forEach((v) => venueMap.set(v.id, v.name))
+    const activityToCategory = new Map<string, string>()
+    activities?.forEach((a) => activityToCategory.set(a.id, a.categoryId))
     const q = search.trim().toLowerCase()
 
     return bookings.filter((booking) => {
@@ -45,7 +48,8 @@ function BookingsContent() {
       if (statusFilter !== "all" && booking.status !== statusFilter) return false
 
       if (categoryFilter !== "all") {
-        return true
+        const catId = activityToCategory.get(booking.activityId)
+        if (catId !== categoryFilter) return false
       }
 
       if (q) {
@@ -56,7 +60,7 @@ function BookingsContent() {
 
       return true
     })
-  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, venues, search])
+  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, venues, search, activities])
 
   // Derive active filter count for badge
   const activeFilterCount = useMemo(() => {
@@ -138,6 +142,13 @@ function BookingsContent() {
     }
   }
 
+  const formatDateDDMMYYYY = (iso: string) => {
+    const parts = iso.split("-")
+    if (parts.length !== 3) return iso
+    const [y, m, d] = parts
+    return `${d}/${m}/${y}`
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between gap-2">
@@ -195,16 +206,23 @@ function BookingsContent() {
             <div className="space-y-3">
               {filteredBookings.map((booking) => {
                 const venue = venues?.find((v) => v.id === booking.venueId)
+                const activity = activities?.find((a) => a.id === booking.activityId)
                 return (
                   <Link prefetch={false} href={`/bookings/${booking.id}`} key={booking.id} className="block rounded-lg border border-border p-3 hover:bg-accent/50">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">{booking.date}</div>
-                      <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                      <div className="text-sm font-medium">{formatDateDDMMYYYY(booking.date)} </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">{booking.startTime} - {booking.endTime}</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{booking.startTime} - {booking.endTime}</div>
                     <div className="mt-1 text-sm">
-                      <div className="font-medium truncate">{booking.guestName}</div>
-                      <div className="text-muted-foreground truncate">{venue?.name}</div>
+                      <div className="font-medium truncate">
+                        {booking.guestName}
+                        <span className="mx-1">{" \u2022 "}</span>
+                        <span className="text-xs text-muted-foreground">({booking.suiteNumber})</span>
+                      </div>
+                      <div className="text-muted-foreground truncate">{activity?.name} - {venue?.name}</div>
                     </div>
                   </Link>
                 )

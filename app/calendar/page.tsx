@@ -8,7 +8,7 @@ import listPlugin from "@fullcalendar/list"
 import interactionPlugin from "@fullcalendar/interaction"
 import type { EventClickArg, DateSelectArg } from "@fullcalendar/core"
 import { useBookings } from "@/lib/hooks/useBookings"
-import { useCategories } from "@/lib/hooks/useActivities"
+import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -46,19 +46,27 @@ function CalendarContent() {
 
   const { data: bookings } = useBookings()
   const { data: categories } = useCategories()
+  const { data: activities } = useActivities()
   const { data: venues } = useVenues()
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
+
+    const activityToCategory = new Map<string, string>()
+    activities?.forEach((a) => activityToCategory.set(a.id, a.categoryId))
 
     return bookings.filter((booking) => {
       if (booking.status === "cancelled") return false
       if (dateFrom && booking.date < dateFrom) return false
       if (dateTo && booking.date > dateTo) return false
       if (venueFilter !== "all" && booking.venueId !== venueFilter) return false
+      if (categoryFilter !== "all") {
+        const catId = activityToCategory.get(booking.activityId)
+        if (catId !== categoryFilter) return false
+      }
       return true
     })
-  }, [bookings, dateFrom, dateTo, venueFilter])
+  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, activities])
 
   const calendarEvents = useMemo(() => {
     if (!filteredBookings || !categories) return []
@@ -212,11 +220,11 @@ function CalendarContent() {
                 return (
                   <div className="text-xs sm:text-sm">
                     <span className="font-medium">{arg.timeText}</span>
-                    <span className="mx-1">•</span>
+                    <span className="mx-1">{' \u2022 '}</span>
                     <span>{b?.guestName ?? arg.event.title}</span>
                     {venueName ? (
                       <>
-                        <span className="mx-1">•</span>
+                        <span className="mx-1">{' \u2022 '}</span>
                         <span className="text-muted-foreground">{venueName}</span>
                       </>
                     ) : null}
@@ -280,3 +288,4 @@ export default function CalendarPage() {
     </NavLayout>
   )
 }
+
