@@ -6,7 +6,7 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, AlertTriangle, LayoutGrid } from "lucide-react"
+import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 import { todayISOInJakarta } from "@/lib/utils"
@@ -19,6 +19,14 @@ export default function DashboardPage() {
   const { data: venues } = useVenues()
 
   const today = todayISOInJakarta()
+
+  const formatDateDDMMYYYYWithDay = (iso: string) => {
+    if (!iso) return ""
+    const [y, m, d] = iso.split("-")
+    const date = new Date(`${iso}T00:00:00+07:00`)
+    const day = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Jakarta" }).format(date)
+    return `${day}, ${d}/${m}/${y}`
+  }
 
   const todayBookings = useMemo(() => {
     if (!bookings) return []
@@ -83,47 +91,101 @@ export default function DashboardPage() {
   return (
     <NavLayout>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
+        {/* Stats Cards - Mobile horizontal */}
+        <div className="sm:hidden -mx-3 mb-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-1">
+            <Card className="min-w-[150px] p-2 bg-gradient-to-br from-primary/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="space-y-1">
+                <div className="text-[10px] font-medium text-muted-foreground">Today's Bookings</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold">{todayBookings.length}</span>
+                    <span className="text-[10px] text-muted-foreground">{stats.todayPax} pax</span>
+                  </div>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="min-w-[150px] p-2 bg-gradient-to-br from-blue-500/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="space-y-1">
+                <div className="text-[10px] font-medium text-muted-foreground">Total Bookings</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold">{stats.total}</span>
+                  </div>
+                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="min-w-[150px] p-2 bg-gradient-to-br from-emerald-500/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="space-y-1">
+                <div className="text-[10px] font-medium text-muted-foreground">Confirmed</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold">{stats.confirmed}</span>
+                  </div>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="min-w-[150px] p-2 bg-gradient-to-br from-amber-500/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="space-y-1">
+                <div className="text-[10px] font-medium text-muted-foreground">Draft</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold">{stats.draft}</span>
+                  </div>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Stats Cards - Desktop grid */}
+        <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-2">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-primary/10 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
+              <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-2">
               <div className="text-2xl font-bold">{todayBookings.length}</div>
               <p className="text-xs text-muted-foreground">{stats.todayPax} total guests</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-blue-500/10 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
               <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
               <LayoutGrid className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-2">
               <div className="text-2xl font-bold">{stats.total}</div>
               <p className="text-xs text-muted-foreground">All time</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-emerald-500/10 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
               <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-2">
               <div className="text-2xl font-bold">{stats.confirmed}</div>
               <p className="text-xs text-muted-foreground">Active bookings</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-amber-500/10 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
               <CardTitle className="text-sm font-medium">Draft</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="py-2">
               <div className="text-2xl font-bold">{stats.draft}</div>
               <p className="text-xs text-muted-foreground">Needs confirmation</p>
             </CardContent>
@@ -131,7 +193,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Warnings */}
-        {warnings.length > 0 && (
+        {false && warnings.length > 0 && (
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
@@ -157,7 +219,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Today's Schedule</CardTitle>
             <CardDescription>
-              {today} - {todayBookings.length} booking(s)
+              {formatDateDDMMYYYYWithDay(today)} - {todayBookings.length} booking(s)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,7 +229,7 @@ export default function DashboardPage() {
                 <p>No bookings scheduled for today</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {todayBookings.map((booking) => {
                   const activity = activities?.find((a) => a.id === booking.activityId)
                   const venue = venues?.find((v) => v.id === booking.venueId)
@@ -175,28 +237,34 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={booking.id}
-                      className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border bg-gradient-to-br from-accent/10 to-transparent hover:bg-accent/40 hover:shadow-sm transition-all"
                     >
                       <div className="flex-shrink-0 sm:w-20 w-full text-center sm:text-left">
-                        <div className="text-sm font-medium">{booking.startTime}</div>
-                        <div className="text-xs text-muted-foreground">{booking.endTime}</div>
+                        <div className="text-sm font-medium font-mono">{booking.startTime}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{booking.endTime}</div>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{activity?.name}</h4>
+                          <h4 className="font-semibold truncate">{activity?.name}</h4>
                           <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
                         </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>
-                            <span className="font-medium">Guest:</span> {booking.guestName} ({booking.suiteNumber})
+                        <div className="text-sm text-muted-foreground space-y-1 min-w-0">
+                          <p className="flex items-center gap-1 truncate">
+                            <User className="h-3.5 w-3.5 opacity-70" />
+                            <span className="font-medium">Guest:</span>
+                            <span className="truncate">{booking.guestName} ({booking.suiteNumber})</span>
                           </p>
-                          <p>
-                            <span className="font-medium">Venue:</span> {venue?.name} {" \u2022 "}
+                          <p className="flex items-center gap-1 truncate">
+                            <MapPin className="h-3.5 w-3.5 opacity-70" />
+                            <span className="font-medium">Venue:</span>
+                            <span className="truncate">{venue?.name}</span>
+                            <span className="mx-1">{" \u2022 "}</span>
                             <span className="font-medium">Pax:</span> {booking.pax}
                           </p>
                           {(booking.gaName || booking.driverName) && (
-                            <p>
+                            <p className="flex items-center gap-1 truncate">
+                              <Users className="h-3.5 w-3.5 opacity-70" />
                               {booking.gaName && (
                                 <>
                                   <span className="font-medium">GA:</span> {booking.gaName}
@@ -210,7 +278,7 @@ export default function DashboardPage() {
                               )}
                             </p>
                           )}
-                          {booking.remark && <p className="italic">{booking.remark}</p>}
+                          {booking.remark && <p className="italic truncate">{booking.remark}</p>}
                         </div>
                       </div>
 

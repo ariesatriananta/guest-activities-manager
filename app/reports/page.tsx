@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { FilterX } from "lucide-react"
 import { Download } from "lucide-react"
 import { NavLayout } from "@/components/layout/nav-layout"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import {
   Bar,
   BarChart,
@@ -25,6 +25,7 @@ import {
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { DateField } from "@/components/ui/date-field"
+import { ReportsFiltersSheet } from "@/components/features/reports/filters-sheet"
 
 function ReportsContent() {
   const [dateFrom, setDateFrom] = useState("")
@@ -36,6 +37,41 @@ function ReportsContent() {
   const { data: categories } = useCategories()
   const { data: venues } = useVenues()
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
+
+  // Load from URL once
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const from = sp.get("from") || ""
+    const to = sp.get("to") || ""
+    if (from) setDateFrom(from)
+    if (to) setDateTo(to)
+  }, [])
+
+  // Sync to URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (dateFrom) params.set("from", dateFrom)
+    if (dateTo) params.set("to", dateTo)
+    const qs = params.toString()
+    const url = qs ? `?${qs}` : ""
+    history.replaceState(null, "", `/reports${url}`)
+  }, [dateFrom, dateTo])
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0
+    if (dateFrom) n++
+    if (dateTo) n++
+    return n
+  }, [dateFrom, dateTo])
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
@@ -152,6 +188,10 @@ function ReportsContent() {
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"]
 
+  const chartClass = isMobile ? "h-[260px] aspect-auto" : "h-[300px]"
+  const trendChartClass = isMobile ? "h-[320px] aspect-auto" : "h-[400px]"
+  const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s)
+
   const exportReport = () => {
     const report = {
       generatedAt: new Date().toISOString(),
@@ -185,47 +225,24 @@ function ReportsContent() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Date Range Filter</CardTitle>
-            <div className="sm:hidden flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setFiltersOpen((v) => !v)}>
-                {filtersOpen ? "Hide" : "Show"}
-              </Button>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label="Clear Filters"
-                onClick={() => { setDateFrom(""); setDateTo("") }}
-              >
-                <FilterX className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className={"grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 " + (filtersOpen ? "" : "max-sm:hidden") }>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date From</label>
-              <DateField value={dateFrom} onChange={setDateFrom} />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date To</label>
-              <DateField value={dateTo} onChange={setDateTo} />
-            </div>
-            <div className="flex items-end">
-              <Button
-                className="hidden sm:inline-flex"
-                variant="outline"
-                onClick={() => { setDateFrom(""); setDateTo("") }}
-              >
-                Clear Filter
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Toolbar: filters sheet + clear */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <ReportsFiltersSheet
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          values={{ dateFrom, dateTo }}
+          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || "") }}
+          activeCount={activeFilterCount}
+        />
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label="Clear Filters"
+          onClick={() => { setDateFrom(""); setDateTo("") }}
+        >
+          <FilterX className="h-4 w-4" />
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bookings by Category */}
@@ -242,7 +259,7 @@ function ReportsContent() {
                   color: "hsl(var(--chart-1))",
                 },
               }}
-              className="h-[300px]"
+              className={chartClass}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -252,15 +269,15 @@ function ReportsContent() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
-                    label
+                    outerRadius={isMobile ? 70 : 80}
+                    label={!isMobile}
                   >
                     {bookingsByCategory.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Legend />
+                  {!isMobile && <Legend />}
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>
@@ -281,12 +298,18 @@ function ReportsContent() {
                   color: "hsl(var(--chart-2))",
                 },
               }}
-              className="h-[300px]"
+              className={chartClass}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={bookingsByVenue}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <XAxis
+                    dataKey="name"
+                    angle={isMobile ? 0 : -45}
+                    textAnchor={isMobile ? "middle" : "end"}
+                    height={isMobile ? 50 : 100}
+                    tickFormatter={(v: string) => (isMobile ? truncate(v, 10) : v)}
+                  />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="bookings" fill="var(--color-bookings)" />
@@ -310,13 +333,18 @@ function ReportsContent() {
                   color: "hsl(var(--chart-3))",
                 },
               }}
-              className="h-[300px]"
+              className={chartClass}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={bookingsByActivity} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={150} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={isMobile ? 110 : 150}
+                    tickFormatter={(v: string) => (isMobile ? truncate(v, 14) : v)}
+                  />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="bookings" fill="var(--color-bookings)" />
                 </BarChart>
@@ -339,7 +367,7 @@ function ReportsContent() {
                   color: "hsl(var(--chart-4))",
                 },
               }}
-              className="h-[300px]"
+              className={chartClass}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={capacityData}>
@@ -377,7 +405,7 @@ function ReportsContent() {
                 color: "hsl(var(--chart-5))",
               },
             }}
-            className="h-[400px]"
+            className={trendChartClass}
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyTrend}>
@@ -385,7 +413,7 @@ function ReportsContent() {
                 <XAxis dataKey="month" />
                 <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
+                {!isMobile && <Legend />}
                 <Line type="monotone" dataKey="confirmed" stroke="var(--color-confirmed)" strokeWidth={2} />
                 <Line type="monotone" dataKey="draft" stroke="var(--color-draft)" strokeWidth={2} />
                 <Line type="monotone" dataKey="cancelled" stroke="var(--color-cancelled)" strokeWidth={2} />

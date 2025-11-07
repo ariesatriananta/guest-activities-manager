@@ -142,6 +142,7 @@
   --fc-button-hover-border-color: oklch(0.85 0 0);
   --fc-button-active-bg-color: oklch(0.85 0 0);
   --fc-button-active-border-color: oklch(0.8 0 0);
+  --fc-button-text-color: var(--foreground);
   --fc-event-bg-color: oklch(0.488 0.243 264.376);
   --fc-event-border-color: oklch(0.488 0.243 264.376);
   --fc-event-text-color: oklch(0.985 0 0);
@@ -159,6 +160,7 @@
   --fc-button-hover-border-color: oklch(0.35 0 0);
   --fc-button-active-bg-color: oklch(0.4 0 0);
   --fc-button-active-border-color: oklch(0.4 0 0);
+  --fc-button-text-color: var(--foreground);
   --fc-page-bg-color: oklch(0.145 0 0);
   --fc-neutral-bg-color: oklch(0.205 0 0);
   --fc-neutral-text-color: oklch(0.708 0 0);
@@ -188,6 +190,68 @@
 
 .calendar-container .fc-day-today {
   background-color: var(--fc-neutral-bg-color) !important;
+}
+
+/* List view: remove colored dot/extra gap for tighter layout */
+.calendar-container .fc .fc-list-event-dot { display: none !important; }
+.calendar-container .fc .fc-list-event-graphic { width: 0 !important; padding: 0 !important; }
+
+/* Month view compact event chips */
+.calendar-container .fc .fc-daygrid-day-events {
+  margin: 2px 2px 0 2px;
+}
+.calendar-container .fc .fc-daygrid-event {
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+}
+.calendar-container .fc .fc-daygrid-event .fc-event-main {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Elegant toolbar buttons (light + dark) */
+.calendar-container .fc .fc-button {
+  color: var(--fc-button-text-color);
+  border-radius: var(--radius-md);
+  border-width: 1px;
+  border-color: var(--fc-button-border-color);
+  background-color: var(--fc-button-bg-color);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  transition: background-color .15s ease, box-shadow .15s ease, color .15s ease, border-color .15s ease;
+}
+.calendar-container .fc .fc-button:hover {
+  background-color: var(--fc-button-hover-bg-color);
+  border-color: var(--fc-button-hover-border-color);
+}
+.calendar-container .fc .fc-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
+}
+.calendar-container .fc .fc-button:disabled {
+  opacity: .6;
+  box-shadow: none;
+}
+.calendar-container .fc .fc-button.fc-button-active,
+.calendar-container .fc .fc-button[aria-pressed="true"] {
+  background-color: var(--primary);
+  border-color: color-mix(in oklab, var(--primary) 85%, black 5%);
+  color: var(--primary-foreground);
+}
+
+/* Make prev/next circular, modern */
+.calendar-container .fc .fc-prev-button,
+.calendar-container .fc .fc-next-button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-container .fc .fc-icon {
+  font-size: 1rem;
 }
 
 /* Hide horizontal/vertical scrollbars but keep scroll behavior */

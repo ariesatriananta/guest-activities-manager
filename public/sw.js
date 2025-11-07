@@ -1,5 +1,5 @@
 // Minimal PWA service worker: cache-first for static assets + SWR for others
-const CACHE_NAME = 'amanjiwo-cache-v2';
+const CACHE_NAME = 'amanjiwo-cache-v3';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/logo/logo-main.png',

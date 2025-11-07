@@ -11,12 +11,11 @@ import { useBookings } from "@/lib/hooks/useBookings"
 import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { DateField } from "@/components/ui/date-field"
 import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { FilterX } from "lucide-react"
+import { FilterX, Activity as ActivityIcon, MapPin, User } from "lucide-react"
+import { CalendarFiltersSheet } from "@/components/features/calendar/filters-sheet"
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { CreateBookingDialog } from "@/components/features/bookings/create-booking-dialog"
 import { NavLayout } from "@/components/layout/nav-layout"
@@ -29,6 +28,7 @@ function CalendarContent() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [viewType, setViewType] = useState<string>("dayGridMonth")
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)")
@@ -42,6 +42,7 @@ function CalendarContent() {
   const [venueFilter, setVenueFilter] = useState<string>("all")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
+  const [search, setSearch] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const { data: bookings } = useBookings()
@@ -49,11 +50,42 @@ function CalendarContent() {
   const { data: activities } = useActivities()
   const { data: venues } = useVenues()
 
+  // Load from URL once
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const q = sp.get("q") || ""
+    const from = sp.get("from") || ""
+    const to = sp.get("to") || ""
+    const venue = sp.get("venue") || "all"
+    const cat = sp.get("cat") || "all"
+    if (q) setSearch(q)
+    if (from) setDateFrom(from)
+    if (to) setDateTo(to)
+    if (venue) setVenueFilter(venue)
+    if (cat) setCategoryFilter(cat)
+  }, [])
+
+  // Sync to URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (search.trim()) params.set("q", search.trim())
+    if (dateFrom) params.set("from", dateFrom)
+    if (dateTo) params.set("to", dateTo)
+    if (venueFilter !== "all") params.set("venue", venueFilter)
+    if (categoryFilter !== "all") params.set("cat", categoryFilter)
+    const qs = params.toString()
+    const url = qs ? `?${qs}` : ""
+    history.replaceState(null, "", `/calendar${url}`)
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter])
+
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
 
     const activityToCategory = new Map<string, string>()
     activities?.forEach((a) => activityToCategory.set(a.id, a.categoryId))
+    const venueMap = new Map<string, string>()
+    venues?.forEach((v) => venueMap.set(v.id, v.name))
+    const q = search.trim().toLowerCase()
 
     return bookings.filter((booking) => {
       if (booking.status === "cancelled") return false
@@ -64,9 +96,24 @@ function CalendarContent() {
         const catId = activityToCategory.get(booking.activityId)
         if (catId !== categoryFilter) return false
       }
+      if (q) {
+        const venueName = venueMap.get(booking.venueId) || ""
+        const hay = `${booking.guestName} ${booking.suiteNumber} ${venueName}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
       return true
     })
-  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, activities])
+  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, activities, venues, search])
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0
+    if (search.trim()) n++
+    if (dateFrom) n++
+    if (dateTo) n++
+    if (venueFilter !== "all") n++
+    if (categoryFilter !== "all") n++
+    return n
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter])
 
   const calendarEvents = useMemo(() => {
     if (!filteredBookings || !categories) return []
@@ -115,86 +162,31 @@ function CalendarContent() {
         <p className="text-muted-foreground">View and manage bookings in calendar format</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Filters</CardTitle>
-            <div className="sm:hidden flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setFiltersOpen((v) => !v)}>
-                {filtersOpen ? "Hide" : "Show"}
-              </Button>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label="Clear Filters"
-                onClick={() => { setCategoryFilter("all"); setVenueFilter("all"); setDateFrom(""); setDateTo("") }}
-              >
-                <FilterX className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className={"grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 " + (filtersOpen ? "" : "max-sm:hidden") }>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Category</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Venue</label>
-              <Select value={venueFilter} onValueChange={setVenueFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All venues" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All venues</SelectItem>
-                  {venues?.map((venue) => (
-                    <SelectItem key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date From</label>
-              <DateField value={dateFrom} onChange={setDateFrom} />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Date To</label>
-              <DateField value={dateTo} onChange={setDateTo} />
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            className="mt-4 bg-transparent hidden sm:inline-flex"
-            onClick={() => {
-              setCategoryFilter("all")
-              setVenueFilter("all")
-              setDateFrom("")
-              setDateTo("")
-            }}
-          >
-            Clear Filters
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search guest / suite / venue"
+          className="flex-1 min-w-[160px]"
+        />
+        <CalendarFiltersSheet
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter }}
+          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || ""); setVenueFilter(v.venueId); setCategoryFilter(v.categoryId) }}
+          venues={venues || []}
+          categories={categories || []}
+          activeCount={activeFilterCount}
+        />
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label="Clear Filters"
+          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setVenueFilter("all"); setCategoryFilter("all") }}
+        >
+          <FilterX className="h-4 w-4" />
+        </Button>
+      </div>
 
       <Card>
         <CardContent className="p-6">
@@ -204,6 +196,7 @@ function CalendarContent() {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
               initialView={isMobile ? "listWeek" : "dayGridMonth"}
               timeZone="Asia/Jakarta"
+              views={{ dayGridMonth: { dayMaxEvents: 3 } }}
               headerToolbar={
                 isMobile
                   ? { left: "prev,next", center: "title", right: "today,dayGridMonth,listWeek" }
@@ -214,14 +207,54 @@ function CalendarContent() {
                   ? { today: "Today", month: "Month", week: "Week", day: "Day" }
                   : undefined
               }
+              datesSet={(arg) => setViewType(arg.view.type)}
               eventContent={(arg) => {
                 const b = arg.event.extendedProps.booking as any
                 const venueName = b?.venueId && Array.isArray(venues) ? (venues.find((v) => v.id === b.venueId)?.name || "") : ""
+                const guest = b?.guestName ?? arg.event.title
+                if (viewType === "dayGridMonth") {
+                  return (
+                    <div className="text-[11px] leading-tight truncate">
+                      <span className="font-medium">{guest}</span>
+                      {venueName ? (
+                        <span className="text-muted-foreground">{' \u2022 '}{venueName}</span>
+                      ) : null}
+                    </div>
+                  )
+                }
+                if (isMobile && viewType === "listWeek") {
+                  const activityName = b?.activityId && Array.isArray(activities)
+                    ? (activities.find((a: any) => a.id === b.activityId)?.name || "")
+                    : ""
+                  return (
+                    <div className="text-xs leading-tight min-w-0">
+                      <div className="font-medium inline-flex items-center gap-1 min-w-0">
+                        <User className="h-3.5 w-3.5 opacity-70" />
+                        <span className="truncate">{guest}</span>
+                        {b?.suiteNumber ? (
+                          <span className="ml-1 text-muted-foreground shrink-0">({b.suiteNumber})</span>
+                        ) : null}
+                      </div>
+                      {activityName ? (
+                        <div className="text-muted-foreground truncate max-w-full flex items-center gap-1">
+                          <ActivityIcon className="h-3.5 w-3.5 opacity-70" />
+                          <span className="truncate">{activityName}</span>
+                        </div>
+                      ) : null}
+                      {venueName ? (
+                        <div className="text-muted-foreground truncate max-w-full flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 opacity-70" />
+                          <span className="truncate">{venueName}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                }
                 return (
                   <div className="text-xs sm:text-sm">
                     <span className="font-medium">{arg.timeText}</span>
                     <span className="mx-1">{' \u2022 '}</span>
-                    <span>{b?.guestName ?? arg.event.title}</span>
+                    <span>{guest}</span>
                     {venueName ? (
                       <>
                         <span className="mx-1">{' \u2022 '}</span>
@@ -288,4 +321,3 @@ export default function CalendarPage() {
     </NavLayout>
   )
 }
-

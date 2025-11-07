@@ -61,7 +61,7 @@ export function MobileBottomNav() {
           {/* Left/Right items */}
           <div className="grid grid-cols-4 items-end">
             <NavItem href="/" label="Dashboard" icon={Home} active={isActive("/") && pathname === "/"} />
-            <NavItem href="/calendar" label="Calendar" icon={Calendar} active={isActive("/calendar")} className="mr-6" />
+            <NavItem href="/calendar" label="Timeline" icon={Calendar} active={isActive("/calendar")} className="mr-6" />
             <NavItem href="/bookings" label="Booking" icon={ClipboardList} active={isActive("/bookings")} className="ml-6" />
             {canSeeReports ? (
               <NavItem href="/reports" label="Report" icon={BarChart3} active={isActive("/reports")} />

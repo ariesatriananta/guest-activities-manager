@@ -63,11 +63,11 @@ export function NavLayout({ children }: NavLayoutProps) {
       <header suppressHydrationWarning className="border-b border-border bg-card sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm h-16 md:h-20">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
           <div className="flex items-center justify-between h-full">
-            <div>
+            <div className="flex items-center h-full">
               <Link href="/" aria-label="Go to Dashboard" className="inline-flex items-center">
                 <Logo />
               </Link>
-              <p className="text-sm text-muted-foreground max-sm:hidden">Guest Activities Bookings</p>
+              <p className="text-sm text-muted-foreground max-sm:hidden ml-2">Guest Activities Manager</p>
             </div>
             <ClientOnly>
               <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export function NavLayout({ children }: NavLayoutProps) {
       </header>
 
       {/* Navigation */}
-      <nav suppressHydrationWarning className="hidden sm:block border-b border-border bg-card sticky top-20 md:top-24 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
+      <nav suppressHydrationWarning className="hidden sm:block border-b border-border bg-card sticky top-16 md:top-20 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 md:py-2">
           <div ref={navRef} className="relative flex items-center gap-1 overflow-x-auto no-scrollbar">
                 <Link href="/">
@@ -111,7 +111,7 @@ export function NavLayout({ children }: NavLayoutProps) {
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/calendar") ? "text-primary" : undefined)}
                     data-active={isActive("/calendar") ? "true" : undefined}
                   >
-                    Calendar
+                    Timeline
                   </Button>
                 </Link>
                 <Link href="/bookings">
@@ -271,4 +271,3 @@ function UserMenu() {
     </DropdownMenu>
   )
 }
-

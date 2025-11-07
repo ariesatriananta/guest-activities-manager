@@ -158,7 +158,7 @@ function BookingsContent() {
         </div>
         <Button onClick={exportToCSV} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          Export Bookings
         </Button>
       </div>
 

@@ -10,7 +10,7 @@ import { Toaster } from "sonner"
 import { SWRegister } from "@/components/sw-register"
 
 export const metadata: Metadata = {
-  title: "Guest Activities",
+  title: "Guest Activities Bookings",
   description: "Hotel guest daily activities management system",
   generator: "dino-apps",
   manifest: "/manifest.webmanifest",
