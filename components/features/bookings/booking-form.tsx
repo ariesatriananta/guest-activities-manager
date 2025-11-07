@@ -158,7 +158,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                   <FormLabel>Status</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
@@ -376,7 +376,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
           <div className="flex gap-2 justify-end max-sm:flex-col max-sm:items-stretch">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
-                Cancel
+                Back
               </Button>
             )}
             <Button type="submit" disabled={submitting}>

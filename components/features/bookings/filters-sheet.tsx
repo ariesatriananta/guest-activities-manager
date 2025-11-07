@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { DateField } from "@/components/ui/date-field"
 import type { BookingStatus, ActivityCategory as Category, Venue } from "@/lib/types"
 import { SlidersHorizontal, FilterX } from "lucide-react"
 
@@ -44,7 +45,10 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
           ) : null}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="sm:max-w-xl">
+      <SheetContent
+        side="bottom"
+        className="sm:max-w-xl sm:w-full sm:left-1/2 sm:top-1/2 sm:right-auto sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:data-[state=open]:animate-in sm:data-[state=closed]:animate-out sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:duration-300 sm:data-[state=closed]:duration-200"
+      >
         <SheetHeader>
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
@@ -52,17 +56,27 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2">
             <label className="text-sm font-medium mb-2 block">Date Range</label>
-            <div className="flex items-center gap-2">
-              <Input type="date" value={draft.dateFrom || ""} onChange={(e) => setDraft((d) => ({ ...d, dateFrom: e.target.value }))} />
+            <div className="flex items-center gap-2 w-full">
+              <DateField
+                modal
+                className="flex-1"
+                value={draft.dateFrom || ""}
+                onChange={(v) => setDraft((d) => ({ ...d, dateFrom: v }))}
+              />
               <span className="text-muted-foreground">to</span>
-              <Input type="date" min={draft.dateFrom || undefined} value={draft.dateTo || ""} onChange={(e) => setDraft((d) => ({ ...d, dateTo: e.target.value }))} />
+              <DateField
+                modal
+                className="flex-1"
+                value={draft.dateTo || ""}
+                onChange={(v) => setDraft((d) => ({ ...d, dateTo: v }))}
+              />
             </div>
           </div>
 
           <div>
             <label className="text-sm font-medium mb-2 block">Venue</label>
             <Select value={draft.venueId} onValueChange={(v) => setDraft((d) => ({ ...d, venueId: v }))}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="All venues" />
               </SelectTrigger>
               <SelectContent>
@@ -79,7 +93,7 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
           <div>
             <label className="text-sm font-medium mb-2 block">Category</label>
             <Select value={draft.categoryId} onValueChange={(v) => setDraft((d) => ({ ...d, categoryId: v }))}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +110,7 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
           <div>
             <label className="text-sm font-medium mb-2 block">Status</label>
             <Select value={draft.status} onValueChange={(v) => setDraft((d) => ({ ...d, status: v as any }))}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>

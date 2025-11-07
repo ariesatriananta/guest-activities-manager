@@ -13,6 +13,8 @@ interface DateFieldProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  // When used inside Dialog/Sheet, prevent parent from closing on interact outside
+  modal?: boolean
 }
 
 function isoToDisplay(iso?: string) {
@@ -22,11 +24,11 @@ function isoToDisplay(iso?: string) {
   return `${d}/${m}/${y}`
 }
 
-export function DateField({ value, onChange, placeholder = "Pick a date", className, disabled }: DateFieldProps) {
+export function DateField({ value, onChange, placeholder = "Pick a date", className, disabled, modal = false }: DateFieldProps) {
   const display = value ? isoToDisplay(value) : ""
   return (
     <div className={cn("relative", className)}>
-      <Popover>
+      <Popover modal={modal}>
         <PopoverTrigger asChild>
           <Button type="button" variant="outline" className={cn("w-full justify-start bg-transparent pr-9") } disabled={disabled}>
             <CalendarIcon className="mr-2 h-4 w-4" />
