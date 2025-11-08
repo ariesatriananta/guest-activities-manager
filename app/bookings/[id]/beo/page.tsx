@@ -5,6 +5,7 @@ import { useBooking } from "@/lib/hooks/useBookings"
 import { useActivities } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Printer, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -25,8 +26,21 @@ export default function BEOPage({ params }: { params: Promise<{ id: string }> })
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded" />
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <Skeleton className="h-9 w-24 rounded" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

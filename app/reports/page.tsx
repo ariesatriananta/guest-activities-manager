@@ -9,6 +9,7 @@ import { FilterX } from "lucide-react"
 import { Download } from "lucide-react"
 import { NavLayout } from "@/components/layout/nav-layout"
 import { useMemo, useState, useEffect } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Bar,
   BarChart,
@@ -32,10 +33,10 @@ function ReportsContent() {
   const [dateTo, setDateTo] = useState("")
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
-  const { data: bookings } = useBookings()
-  const { data: activities } = useActivities()
-  const { data: categories } = useCategories()
-  const { data: venues } = useVenues()
+  const { data: bookings, isLoading: loadingBookings } = useBookings()
+  const { data: activities, isLoading: loadingActivities } = useActivities()
+  const { data: categories, isLoading: loadingCategories } = useCategories()
+  const { data: venues, isLoading: loadingVenues } = useVenues()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -187,6 +188,7 @@ function ReportsContent() {
   }, [filteredBookings])
 
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"]
+  const isLoadingAny = loadingBookings || loadingActivities || loadingCategories || loadingVenues
 
   const chartClass = isMobile ? "h-[260px] aspect-auto" : "h-[300px]"
   const trendChartClass = isMobile ? "h-[320px] aspect-auto" : "h-[400px]"
@@ -252,6 +254,9 @@ function ReportsContent() {
             <CardDescription>Distribution of bookings across activity categories</CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoadingAny ? (
+              <Skeleton className={chartClass} />
+            ) : (
             <ChartContainer
               config={{
                 value: {
@@ -281,6 +286,7 @@ function ReportsContent() {
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -291,6 +297,9 @@ function ReportsContent() {
             <CardDescription>Most popular venues</CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoadingAny ? (
+              <Skeleton className={chartClass} />
+            ) : (
             <ChartContainer
               config={{
                 bookings: {
@@ -316,6 +325,7 @@ function ReportsContent() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -326,6 +336,9 @@ function ReportsContent() {
             <CardDescription>Most booked activities</CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoadingAny ? (
+              <Skeleton className={chartClass} />
+            ) : (
             <ChartContainer
               config={{
                 bookings: {
@@ -350,6 +363,7 @@ function ReportsContent() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -360,6 +374,9 @@ function ReportsContent() {
             <CardDescription>Bookings by party size</CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoadingAny ? (
+              <Skeleton className={chartClass} />
+            ) : (
             <ChartContainer
               config={{
                 count: {
@@ -379,6 +396,7 @@ function ReportsContent() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -390,6 +408,9 @@ function ReportsContent() {
           <CardDescription>Booking status trends over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoadingAny ? (
+            <Skeleton className={trendChartClass} />
+          ) : (
           <ChartContainer
             config={{
               confirmed: {
@@ -420,6 +441,7 @@ function ReportsContent() {
               </LineChart>
             </ResponsiveContainer>
           </ChartContainer>
+          )}
         </CardContent>
       </Card>
 

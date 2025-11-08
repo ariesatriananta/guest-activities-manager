@@ -12,11 +12,13 @@ import { useMemo } from "react"
 import { todayISOInJakarta } from "@/lib/utils"
 import type { BookingStatus } from "@/lib/types"
 import { NavLayout } from "@/components/layout/nav-layout"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
-  const { data: bookings } = useBookings()
-  const { data: activities } = useActivities()
-  const { data: venues } = useVenues()
+  const { data: bookings, isLoading: loadingBookings } = useBookings()
+  const { data: activities, isLoading: loadingActivities } = useActivities()
+  const { data: venues, isLoading: loadingVenues } = useVenues()
+  const isLoadingAny = loadingBookings || loadingActivities || loadingVenues
 
   const today = todayISOInJakarta()
 
@@ -94,6 +96,19 @@ export default function DashboardPage() {
         {/* Stats Cards - Mobile horizontal */}
         <div className="sm:hidden -mx-3 mb-3">
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-1">
+            {isLoadingAny ? (
+              <>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="min-w-[150px] p-2">
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-6 w-14" />
+                    </div>
+                  </Card>
+                ))}
+              </>
+            ) : (
+              <>
             <Card className="min-w-[150px] p-2 bg-gradient-to-br from-primary/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="space-y-1">
                 <div className="text-[10px] font-medium text-muted-foreground">Today's Bookings</div>
@@ -142,11 +157,26 @@ export default function DashboardPage() {
                 </div>
               </div>
             </Card>
+              </>
+            )}
           </div>
         </div>
 
         {/* Stats Cards - Desktop grid */}
         <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-2">
+          {isLoadingAny ? (
+            <>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <Skeleton className="h-5 w-28 mb-2" />
+                    <Skeleton className="h-7 w-16" />
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
           <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-primary/10 to-transparent">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
               <CardTitle className="text-sm font-medium">Today's Bookings</CardTitle>
@@ -190,6 +220,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Needs confirmation</p>
             </CardContent>
           </Card>
+            </>
+          )}
         </div>
 
         {/* Warnings */}
@@ -223,7 +255,26 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {todayBookings.length === 0 ? (
+            {isLoadingAny ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="p-3 rounded-lg border border-border">
+                    <div className="flex gap-3">
+                      <div className="w-16">
+                        <Skeleton className="h-4 w-10 mb-1" />
+                        <Skeleton className="h-3 w-8" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-3 w-2/3" />
+                        <Skeleton className="h-3 w-1/3" />
+                      </div>
+                      <Skeleton className="h-8 w-16 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : todayBookings.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No bookings scheduled for today</p>
@@ -300,7 +351,22 @@ export default function DashboardPage() {
             <CardDescription>Next 5 confirmed bookings</CardDescription>
           </CardHeader>
           <CardContent>
-            {upcomingBookings.length === 0 ? (
+            {isLoadingAny ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-3 rounded-lg border border-border">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-8 w-16" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-3 w-2/3" />
+                      </div>
+                      <Skeleton className="h-8 w-16 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : upcomingBookings.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No upcoming bookings</p>

@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Eye, FilterX } from "lucide-react"
+import { Download, Eye, FilterX, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
@@ -25,6 +26,7 @@ function BookingsContent() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(20)
   const { data: bookings, isLoading } = useBookings()
   const { data: categories } = useCategories()
@@ -32,6 +34,10 @@ function BookingsContent() {
   const { data: venues } = useVenues()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const goTo = (id: string) => {
+    setNavigatingId(id)
+    router.push(`/bookings/${id}`)
+  }
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
@@ -205,7 +211,23 @@ function BookingsContent() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center text-muted-foreground">Loading...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-lg border border-border p-3">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <div className="flex flex-col items-end gap-1">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <Skeleton className="h-4 w-3/5" />
+                    <Skeleton className="h-3 w-2/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (filteredBookings?.length || 0) === 0 ? (
             <div className="text-center text-muted-foreground">No bookings found</div>
           ) : (
@@ -214,12 +236,16 @@ function BookingsContent() {
                 const venue = venues?.find((v) => v.id === booking.venueId)
                 const activity = activities?.find((a) => a.id === booking.activityId)
                 return (
-                  <Link prefetch={false} href={`/bookings/${booking.id}`} key={booking.id} className="block rounded-lg border border-border p-3 hover:bg-accent/50">
+                  <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }} key={booking.id} className="block rounded-lg border border-border p-3 hover:bg-accent/50">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{formatDateDDMMYYYY(booking.date)} </div>
                       <div className="flex flex-col items-end gap-0.5">
                         <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">{booking.startTime} - {booking.endTime}</div>
+                        {navigatingId === booking.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : (
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">{booking.startTime} - {booking.endTime}</div>
+                        )}
                       </div>
                     </div>
                     <div className="mt-1 text-sm">
@@ -267,11 +293,18 @@ function BookingsContent() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      Loading...
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell className="whitespace-nowrap"><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
+                    </TableRow>
+                  ))
                 ) : filteredBookings?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground">
@@ -296,8 +329,12 @@ function BookingsContent() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link prefetch={false} href={`/bookings/${booking.id}`}>
-                              <Eye className="h-4 w-4" />
+                            <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }}>
+                              {navigatingId === booking.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
                             </Link>
                           </Button>
                         </TableCell>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useCategories, useActivitiesByCategory } from "@/lib/hooks/useActivities"
 import { useVenues, useVenue } from "@/lib/hooks/useVenues"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useCheckVenueConflict } from "@/lib/hooks/useBookings"
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
@@ -57,8 +58,8 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [conflictActivity, setConflictActivity] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
-  const { data: categories } = useCategories()
-  const { data: venues } = useVenues()
+  const { data: categories, isLoading: loadingCategories } = useCategories()
+  const { data: venues, isLoading: loadingVenues } = useVenues()
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -135,6 +136,22 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
   return (
     <>
+      {(loadingCategories || loadingVenues) ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+      ) : (
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -386,6 +403,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
           </div>
         </form>
       </Form>
+      )}
 
       <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
         <AlertDialogContent>

@@ -8,6 +8,7 @@ import "./globals.css"
 import { Suspense } from "react"
 import { Toaster } from "sonner"
 import { SWRegister } from "@/components/sw-register"
+import { TopLoader } from "@/components/top-loader"
 
 export const metadata: Metadata = {
   title: "Guest Activities Bookings",
@@ -42,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <TopLoader />
         <Providers>
           <Suspense fallback={null}>{children}</Suspense>
         </Providers>

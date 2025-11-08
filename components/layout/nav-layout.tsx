@@ -32,6 +32,7 @@ export function NavLayout({ children }: NavLayoutProps) {
   const navRef = React.useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 })
   const [noTransition, setNoTransition] = React.useState(true)
+  const [navPending, setNavPending] = React.useState(false)
   
 
   React.useEffect(() => {
@@ -57,6 +58,16 @@ export function NavLayout({ children }: NavLayoutProps) {
     return pathname.startsWith(path)
   }
 
+  const onNavClick = () => {
+    setNavPending(true)
+    // will reset on pathname change
+  }
+
+  React.useEffect(() => {
+    // reset pending when route changes
+    setNavPending(false)
+  }, [pathname])
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -74,14 +85,14 @@ export function NavLayout({ children }: NavLayoutProps) {
                 {session?.user ? <UserMenu /> : null}
                 {/* Admin settings shortcut on mobile */}
                 {role === "admin" ? (
-                  <Button asChild size="icon-sm" variant="outline" className="sm:hidden">
-                    <Link href="/settings" aria-label="Settings">
+                  <Button asChild size="icon-sm" variant="outline" className="sm:hidden" disabled={navPending}>
+                    <Link href="/settings" aria-label="Settings" onClick={onNavClick}>
                       <Cog className="h-4 w-4" />
                     </Link>
                   </Button>
                 ) : null}
-                <Button asChild className="hidden sm:inline-flex">
-                  <Link href="/bookings/new">
+                <Button asChild className="hidden sm:inline-flex" disabled={navPending}>
+                  <Link href="/bookings/new" onClick={onNavClick}>
                     <Plus className="h-4 w-4 mr-2" />
                     <span className="max-sm:hidden">Booking</span>
                   </Link>
@@ -96,50 +107,55 @@ export function NavLayout({ children }: NavLayoutProps) {
       <nav suppressHydrationWarning className="hidden sm:block border-b border-border bg-card sticky top-16 md:top-20 z-40 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 md:py-2">
           <div ref={navRef} className="relative flex items-center gap-1 overflow-x-auto no-scrollbar">
-                <Link href="/">
+                <Link href="/" onClick={onNavClick}>
                   <Button
                     variant="ghost"
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/") && pathname === "/" ? "text-primary" : undefined)}
                     data-active={isActive("/") && pathname === "/" ? "true" : undefined}
+                    disabled={navPending}
                   >
                     Dashboard
                   </Button>
                 </Link>
-                <Link href="/calendar">
+                <Link href="/calendar" onClick={onNavClick}>
                   <Button
                     variant="ghost"
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/calendar") ? "text-primary" : undefined)}
                     data-active={isActive("/calendar") ? "true" : undefined}
+                    disabled={navPending}
                   >
                     Timeline
                   </Button>
                 </Link>
-                <Link href="/bookings">
+                <Link href="/bookings" onClick={onNavClick}>
                   <Button
                     variant="ghost"
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/bookings") ? "text-primary" : undefined)}
                     data-active={isActive("/bookings") ? "true" : undefined}
+                    disabled={navPending}
                   >
                     Bookings
                   </Button>
                 </Link>
                 {(role === "admin" || role === "staff") && (
-                <Link href="/reports">
+                <Link href="/reports" onClick={onNavClick}>
                   <Button
                     variant="ghost"
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/reports") ? "text-primary" : undefined)}
                     data-active={isActive("/reports") ? "true" : undefined}
+                    disabled={navPending}
                   >
                     Reports
                   </Button>
                 </Link>
                 )}
                 {role === "admin" && (
-                <Link href="/settings">
+                <Link href="/settings" onClick={onNavClick}>
                   <Button
                     variant="ghost"
                     className={cn("rounded-none border-b-2 border-transparent hover:border-muted", isActive("/settings") ? "text-primary" : undefined)}
                     data-active={isActive("/settings") ? "true" : undefined}
+                    disabled={navPending}
                   >
                     Settings
                   </Button>

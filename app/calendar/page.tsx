@@ -12,6 +12,7 @@ import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { FilterX, Activity as ActivityIcon, MapPin, User } from "lucide-react"
@@ -45,10 +46,11 @@ function CalendarContent() {
   const [search, setSearch] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  const { data: bookings } = useBookings()
-  const { data: categories } = useCategories()
-  const { data: activities } = useActivities()
-  const { data: venues } = useVenues()
+  const { data: bookings, isLoading: loadingBookings } = useBookings()
+  const { data: categories, isLoading: loadingCategories } = useCategories()
+  const { data: activities, isLoading: loadingActivities } = useActivities()
+  const { data: venues, isLoading: loadingVenues } = useVenues()
+  const isLoadingAny = loadingBookings || loadingCategories || loadingActivities || loadingVenues
 
   // Load from URL once
   useEffect(() => {
@@ -163,34 +165,47 @@ function CalendarContent() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search guest / suite / venue"
-          className="flex-1 min-w-[160px]"
-        />
-        <CalendarFiltersSheet
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter }}
-          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || ""); setVenueFilter(v.venueId); setCategoryFilter(v.categoryId) }}
-          venues={venues || []}
-          categories={categories || []}
-          activeCount={activeFilterCount}
-        />
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Clear Filters"
-          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setVenueFilter("all"); setCategoryFilter("all") }}
-        >
-          <FilterX className="h-4 w-4" />
-        </Button>
+        {isLoadingAny ? (
+          <>
+            <Skeleton className="h-9 flex-1 min-w-[160px]" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-9 rounded-md" />
+          </>
+        ) : (
+          <>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search guest / suite / venue"
+              className="flex-1 min-w-[160px]"
+            />
+            <CalendarFiltersSheet
+              open={filtersOpen}
+              onOpenChange={setFiltersOpen}
+              values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter }}
+              onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || ""); setVenueFilter(v.venueId); setCategoryFilter(v.categoryId) }}
+              venues={venues || []}
+              categories={categories || []}
+              activeCount={activeFilterCount}
+            />
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label="Clear Filters"
+              onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setVenueFilter("all"); setCategoryFilter("all") }}
+            >
+              <FilterX className="h-4 w-4" />
+            </Button>
+          </>
+        )}
       </div>
 
       <Card>
         <CardContent className="p-6">
           <div className="calendar-container">
+            {isLoadingAny ? (
+              <Skeleton className="h-[420px] w-full" />
+            ) : (
             <FullCalendar
               key={isMobile ? "m" : "d"}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -275,6 +290,7 @@ function CalendarContent() {
               slotMinTime="06:00:00"
               slotMaxTime="23:00:00"
             />
+            )}
           </div>
         </CardContent>
       </Card>

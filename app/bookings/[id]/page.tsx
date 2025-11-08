@@ -10,6 +10,7 @@ import { ArrowLeft, Trash2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { use } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { BookingFormData } from "@/lib/types"
 import {
   AlertDialog,
@@ -69,8 +70,40 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-9 w-9 rounded-md" />
+              <div>
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-56 mt-1" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-9 rounded-md" />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Details</CardTitle>
+              <CardDescription>Update the booking information</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+                <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-28" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
