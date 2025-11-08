@@ -110,6 +110,7 @@ export function UsersSettings() {
     }
     try {
       setSubmitting(true)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       if (editing) {
         await updateUser.mutateAsync({ id: editing.id, data: { name: form.name, role: form.role, avatar_img: form.avatar_img || undefined, password: form.password || undefined } })
       } else {
@@ -120,6 +121,7 @@ export function UsersSettings() {
       setFormError(err?.message || "Terjadi kesalahan saat menyimpan user")
     } finally {
       setSubmitting(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 
@@ -130,7 +132,13 @@ export function UsersSettings() {
   const onConfirmDelete = async () => {
     if (!selectedDelete) return
     setDeletingId(selectedDelete.id)
-    try { await deleteUser.mutateAsync(selectedDelete.id) } finally { setDeletingId(null); setConfirmOpen(false); setSelectedDelete(null) }
+    try {
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      await deleteUser.mutateAsync(selectedDelete.id)
+    } finally {
+      setDeletingId(null); setConfirmOpen(false); setSelectedDelete(null)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+    }
   }
 
   return (

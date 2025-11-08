@@ -54,6 +54,7 @@ export function CategoriesSettings() {
 
     try {
       setSubmitting(true)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       if (editingCategory) {
         await updateCategory.mutateAsync({
           id: editingCategory.id,
@@ -75,6 +76,7 @@ export function CategoriesSettings() {
       toast.error((error as any)?.message || "Failed to save category")
     } finally {
       setSubmitting(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 
@@ -87,6 +89,7 @@ export function CategoriesSettings() {
     if (!selectedCategory) return
     try {
       setDeletingId(selectedCategory.id)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       await deleteCategory.mutateAsync(selectedCategory.id)
       toast.success("Category deleted")
     } catch (error) {
@@ -96,6 +99,7 @@ export function CategoriesSettings() {
       setDeletingId(null)
       setConfirmOpen(false)
       setSelectedCategory(null)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 

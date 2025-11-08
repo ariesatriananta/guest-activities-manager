@@ -66,6 +66,7 @@ export function VenuesSettings() {
 
     try {
       setSubmitting(true)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       if (editingVenue) {
         await updateVenue.mutateAsync({
           id: editingVenue.id,
@@ -93,6 +94,7 @@ export function VenuesSettings() {
       toast.error((error as any)?.message || "Failed to save venue")
     } finally {
       setSubmitting(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 
@@ -105,6 +107,7 @@ export function VenuesSettings() {
     if (!selectedVenue) return
     try {
       setDeletingId(selectedVenue.id)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       await deleteVenue.mutateAsync(selectedVenue.id)
       toast.success("Venue deleted")
     } catch (error) {
@@ -114,6 +117,7 @@ export function VenuesSettings() {
       setDeletingId(null)
       setConfirmOpen(false)
       setSelectedVenue(null)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 

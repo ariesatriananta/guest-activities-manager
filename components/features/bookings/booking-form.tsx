@@ -108,6 +108,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
   const handleFormSubmit = async (data: BookingFormData) => {
     setSubmitting(true)
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     // Check for venue conflict
     if (selectedVenue?.isSingleBookingPerDay && selectedDate && selectedVenueId) {
       const conflict = await checkConflict.mutateAsync({
@@ -123,6 +124,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
         setConflictActivity(conflict.activityName || "")
         setShowConflictDialog(true)
         setSubmitting(false)
+        try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
         return
       }
     }
@@ -131,6 +133,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
       await onSubmit(data)
     } finally {
       setSubmitting(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 

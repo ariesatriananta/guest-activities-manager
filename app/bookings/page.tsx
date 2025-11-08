@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Eye, FilterX, Loader2 } from "lucide-react"
+import { Download, Eye, FilterX, Loader2, RefreshCcw } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
@@ -27,8 +27,9 @@ function BookingsContent() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const [visibleCount, setVisibleCount] = useState(20)
-  const { data: bookings, isLoading } = useBookings()
+  const { data: bookings, isLoading, mutate } = useBookings()
   const { data: categories } = useCategories()
   const { data: activities } = useActivities()
   const { data: venues } = useVenues()
@@ -140,7 +141,15 @@ function BookingsContent() {
     const a = document.createElement("a")
     a.href = url
     a.download = `bookings-${new Date().toISOString().split("T")[0]}.csv`
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     a.click()
+    try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+    try { await mutate() } finally { setRefreshing(false); try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }
   }
 
   const getStatusColor = (status: BookingStatus) => {
@@ -168,10 +177,14 @@ function BookingsContent() {
           <h2 className="text-2xl sm:text-3xl font-bold">Bookings</h2>
           <p className="text-muted-foreground">Manage guest activity bookings</p>
         </div>
-        <Button onClick={exportToCSV} size="sm" variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export Bookings
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRefresh} size="icon-sm" variant="outline" aria-label="Refresh" disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          </Button>
+          <Button onClick={exportToCSV} size="icon-sm" variant="outline" aria-label="Export CSV">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* One-line toolbar (all screens): search + filters (Sheet) + clear */}

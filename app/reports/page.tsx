@@ -5,7 +5,7 @@ import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FilterX } from "lucide-react"
+import { FilterX, RefreshCcw, Loader2 } from "lucide-react"
 import { Download } from "lucide-react"
 import { NavLayout } from "@/components/layout/nav-layout"
 import { useMemo, useState, useEffect } from "react"
@@ -33,12 +33,13 @@ function ReportsContent() {
   const [dateTo, setDateTo] = useState("")
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
 
-  const { data: bookings, isLoading: loadingBookings } = useBookings()
-  const { data: activities, isLoading: loadingActivities } = useActivities()
-  const { data: categories, isLoading: loadingCategories } = useCategories()
-  const { data: venues, isLoading: loadingVenues } = useVenues()
+  const { data: bookings, isLoading: loadingBookings, mutate: mutateBookings } = useBookings()
+  const { data: activities, isLoading: loadingActivities, refetch: refetchActivities } = useActivities()
+  const { data: categories, isLoading: loadingCategories, refetch: refetchCategories } = useCategories()
+  const { data: venues, isLoading: loadingVenues, refetch: refetchVenues } = useVenues()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)")
@@ -195,6 +196,7 @@ function ReportsContent() {
   const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s)
 
   const exportReport = () => {
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     const report = {
       generatedAt: new Date().toISOString(),
       dateRange: { from: dateFrom || "all", to: dateTo || "all" },
@@ -212,6 +214,23 @@ function ReportsContent() {
     a.href = url
     a.download = `report-${new Date().toISOString().split("T")[0]}.json`
     a.click()
+    try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+    try {
+      await Promise.all([
+        mutateBookings(),
+        refetchActivities(),
+        refetchCategories(),
+        refetchVenues(),
+      ])
+    } finally {
+      setRefreshing(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+    }
   }
 
   return (
@@ -221,10 +240,14 @@ function ReportsContent() {
           <h2 className="text-2xl sm:text-3xl font-bold">Reports & Analytics</h2>
           <p className="text-muted-foreground">View booking statistics and trends</p>
         </div>
-        <Button onClick={exportReport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRefresh} size="icon-sm" variant="outline" aria-label="Refresh" disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          </Button>
+          <Button onClick={exportReport} size="icon-sm" variant="outline" aria-label="Export Report">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Toolbar: filters sheet + clear */}

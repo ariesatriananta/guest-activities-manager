@@ -30,6 +30,23 @@ export function TopLoader() {
       }, 120)
     }
     document.addEventListener("click", onClick, true)
+    const onStart = () => {
+      setActive(true)
+      setWidth((w) => (w === 0 ? 10 : w))
+      timer.current && clearInterval(timer.current)
+      timer.current = setInterval(() => setWidth((w) => (w < 85 ? w + 5 : w)), 120)
+    }
+    const onStop = () => {
+      setActive(true)
+      setWidth(100)
+      setTimeout(() => {
+        setActive(false)
+        setWidth(0)
+        if (timer.current) clearInterval(timer.current)
+      }, 250)
+    }
+    window.addEventListener("toploader:start", onStart as EventListener)
+    window.addEventListener("toploader:stop", onStop as EventListener)
     return () => document.removeEventListener("click", onClick, true)
   }, [])
 
@@ -57,4 +74,3 @@ export function TopLoader() {
     />
   )
 }
-

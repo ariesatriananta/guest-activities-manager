@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { FilterX, Activity as ActivityIcon, MapPin, User } from "lucide-react"
+import { FilterX, Activity as ActivityIcon, MapPin, User, RefreshCcw, Loader2 } from "lucide-react"
 import { CalendarFiltersSheet } from "@/components/features/calendar/filters-sheet"
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { CreateBookingDialog } from "@/components/features/bookings/create-booking-dialog"
@@ -46,11 +46,28 @@ function CalendarContent() {
   const [search, setSearch] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  const { data: bookings, isLoading: loadingBookings } = useBookings()
-  const { data: categories, isLoading: loadingCategories } = useCategories()
-  const { data: activities, isLoading: loadingActivities } = useActivities()
-  const { data: venues, isLoading: loadingVenues } = useVenues()
+  const { data: bookings, isLoading: loadingBookings, mutate: mutateBookings } = useBookings()
+  const { data: categories, isLoading: loadingCategories, refetch: refetchCategories } = useCategories()
+  const { data: activities, isLoading: loadingActivities, refetch: refetchActivities } = useActivities()
+  const { data: venues, isLoading: loadingVenues, refetch: refetchVenues } = useVenues()
   const isLoadingAny = loadingBookings || loadingCategories || loadingActivities || loadingVenues
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+    try {
+      await Promise.all([
+        mutateBookings(),
+        refetchCategories(),
+        refetchActivities(),
+        refetchVenues(),
+      ])
+    } finally {
+      setRefreshing(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+    }
+  }
 
   // Load from URL once
   useEffect(() => {
@@ -159,9 +176,22 @@ function CalendarContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold">Calendar</h2>
-        <p className="text-muted-foreground">View and manage bookings in calendar format</p>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold">Calendar</h2>
+          <p className="text-muted-foreground">View and manage bookings in calendar format</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="icon-sm"
+            variant="outline"
+            aria-label="Refresh"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">

@@ -80,6 +80,7 @@ export function ActivitiesSettings() {
 
     try {
       setSubmitting(true)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       if (editingActivity) {
         await updateActivity.mutateAsync({
           id: editingActivity.id,
@@ -113,6 +114,7 @@ export function ActivitiesSettings() {
       toast.error((error as any)?.message || "Failed to save activity")
     } finally {
       setSubmitting(false)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 
@@ -125,6 +127,7 @@ export function ActivitiesSettings() {
     if (!selectedActivity) return
     try {
       setDeletingId(selectedActivity.id)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       await deleteActivity.mutateAsync(selectedActivity.id)
       toast.success("Activity deleted")
     } catch (error) {
@@ -134,6 +137,7 @@ export function ActivitiesSettings() {
       setDeletingId(null)
       setConfirmOpen(false)
       setSelectedActivity(null)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
 
