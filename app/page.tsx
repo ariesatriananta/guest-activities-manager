@@ -6,15 +6,18 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User } from "lucide-react"
+import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { useMemo, useState, useEffect } from "react"
 import { todayISOInJakarta } from "@/lib/utils"
-import type { BookingStatus } from "@/lib/types"
+import type { BookingStatus, Booking } from "@/lib/types"
+import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { NavLayout } from "@/components/layout/nav-layout"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { data: bookings, isLoading: loadingBookings } = useBookings()
   const { data: activities, isLoading: loadingActivities } = useActivities()
   const { data: venues, isLoading: loadingVenues } = useVenues()
@@ -88,6 +91,47 @@ export default function DashboardPage() {
       case "cancelled":
         return "destructive"
     }
+  }
+
+  const getStatusBarAccent = (status: BookingStatus) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-emerald-500/35"
+      case "draft":
+        return "bg-amber-500/35"
+      case "cancelled":
+        return "bg-red-500/35"
+    }
+  }
+
+  const getStatusBadgeClass = (status: BookingStatus) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300"
+      case "draft":
+        return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
+      case "cancelled":
+        return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
+    }
+  }
+
+  // Show per-item spinner on navigate to detail booking
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)")
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
+  const goTo = (id: string) => {
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+    setNavigatingId(id)
+    router.push(`/bookings/${id}`)
   }
 
   return (
@@ -288,31 +332,53 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={booking.id}
-                      className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border bg-gradient-to-br from-accent/10 to-transparent hover:bg-accent/40 hover:shadow-sm transition-all"
+                      className="relative flex flex-col sm:flex-row items-start gap-3 sm:gap-4 py-3 px-6 sm:py-4 sm:px-6 rounded-lg border border-border odd:bg-accent/30 sm:odd:bg-transparent bg-gradient-to-br from-accent/10 to-transparent hover:bg-accent/40 hover:shadow-sm transition-all"
+                      onClick={() => { if (isMobile) { setSelectedBooking(booking as Booking); setDrawerOpen(true) } }}
                     >
-                      <div className="flex-shrink-0 sm:w-20 w-full text-center sm:text-left">
-                        <div className="text-sm font-medium font-mono">{booking.startTime}</div>
-                        <div className="text-xs text-muted-foreground font-mono">{booking.endTime}</div>
+                      <span aria-hidden className={`absolute left-0 top-0 h-full w-1.5 rounded-l ${getStatusBarAccent(booking.status)}`} />
+                      <div className="flex-shrink-0 sm:w-20 w-full sm:text-left">
+                        <div className="flex items-center justify-between sm:block">
+                          <div className="text-left">
+                            <div className="text-sm font-medium font-mono">{booking.startTime}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{booking.endTime}</div>
+                          </div>
+                          <div className="sm:hidden ml-2">
+                            <Badge variant="outline" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
+                          </div>
+                        </div>
+                        <div className="hidden sm:block mt-1">
+                          <Badge variant="outline" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
+                        </div>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold truncate">{activity?.name}</h4>
-                          <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                      <div className="flex-shrink-0 sm:w-20 w-full sm:text-left">
+                        <div className="flex items-center mb-1 w-full min-w-0">
+                          <h4 className="font-semibold truncate flex-1 min-w-0">{activity?.name}</h4>
+                          <div className="ml-auto sm:hidden">
+                            <Button variant="outline" size="sm" className="shrink-0" asChild disabled={navigatingId === booking.id}>
+                              <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
+                                {navigatingId === booking.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>Edit</>
+                                )}
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground space-y-1 min-w-0">
+                        <div className="mt-1 text-sm text-muted-foreground space-y-1 min-w-0">
                           <p className="flex items-center gap-1 truncate">
                             <User className="h-3.5 w-3.5 opacity-70" />
                             <span className="font-medium">Guest:</span>
                             <span className="truncate">{booking.guestName} ({booking.suiteNumber})</span>
                           </p>
-                          <p className="flex items-center gap-1 truncate">
+                          <div className="flex items-center gap-1 truncate">
                             <MapPin className="h-3.5 w-3.5 opacity-70" />
                             <span className="font-medium">Venue:</span>
                             <span className="truncate">{venue?.name}</span>
                             <span className="mx-1">{" \u2022 "}</span>
                             <span className="font-medium">Pax:</span> {booking.pax}
-                          </p>
+                          </div>
                           {(booking.gaName || booking.driverName) && (
                             <p className="flex items-center gap-1 truncate">
                               <Users className="h-3.5 w-3.5 opacity-70" />
@@ -333,9 +399,21 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <Button variant="outline" size="sm" asChild className="sm:ml-auto">
-                        <Link prefetch={false} href={`/bookings/${booking.id}`}>View</Link>
-                      </Button>
+                      {/* Desktop-only controls on the right */}
+                      <div className="hidden sm:flex gap-2 sm:ml-auto">
+                        <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => { setSelectedBooking(booking as Booking); setDrawerOpen(true) }}>
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" asChild disabled={navigatingId === booking.id}>
+                          <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
+                            {navigatingId === booking.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>Edit</>
+                            )}
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   )
                 })}
@@ -380,23 +458,58 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={booking.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3 px-6 rounded-lg border border-border odd:bg-accent/30 sm:odd:bg-transparent hover:bg-accent/50 transition-colors"
+                      onClick={() => { if (isMobile) { setSelectedBooking(booking as Booking); setDrawerOpen(true) } }}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="text-center min-w-[80px]">
-                          <div className="text-sm font-medium">{booking.date}</div>
-                          <div className="text-xs text-muted-foreground">{booking.startTime}</div>
+                      <span aria-hidden className={`absolute left-0 top-0 h-full w-1.5 rounded-l ${getStatusBarAccent(booking.status)}`} />
+                      <div className="flex items-center gap-4 w-full">
+                        <div className="min-w-[100px]">
+                          <div className="text-left">
+                            <div className="text-sm font-medium">{booking.date}</div>
+                            <div className="text-xs text-muted-foreground">{booking.startTime}</div>
+                          </div>
+                          {/* Mobile: badge under booking time */}
+                          <div className="sm:hidden mt-1">
+                            <Badge variant="outline" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
+                          </div>
+                          <div className="hidden sm:block mt-1">
+                            <Badge variant="outline" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium">{activity?.name}</div>
-                          <div className="text-sm text-muted-foreground">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 w-full min-w-0">
+                            <div className="font-medium truncate flex-1 min-w-0">{activity?.name}</div>
+                            <div className="ml-auto sm:hidden">
+                              <Button variant="outline" size="sm" asChild disabled={navigatingId === booking.id}>
+                                <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
+                                  {navigatingId === booking.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>Edit</>
+                                  )}
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-1 text-sm text-muted-foreground truncate">
                             {booking.guestName} {" \u2022 "} {venue?.name}
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" asChild className="sm:ml-auto">
-                        <Link prefetch={false} href={`/bookings/${booking.id}`}>View</Link>
-                      </Button>
+                      <div className="hidden sm:flex gap-2 sm:ml-auto">
+                        <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => { setSelectedBooking(booking as Booking); setDrawerOpen(true) }}>
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" asChild disabled={navigatingId === booking.id}>
+                          <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
+                            {navigatingId === booking.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>Edit</>
+                            )}
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   )
                 })}
@@ -405,6 +518,13 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <BookingDrawer
+        booking={selectedBooking}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onClose={() => { setDrawerOpen(false); setSelectedBooking(null) }}
+      />
     </NavLayout>
   )
 }

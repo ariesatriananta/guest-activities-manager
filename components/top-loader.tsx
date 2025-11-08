@@ -47,7 +47,12 @@ export function TopLoader() {
     }
     window.addEventListener("toploader:start", onStart as EventListener)
     window.addEventListener("toploader:stop", onStop as EventListener)
-    return () => document.removeEventListener("click", onClick, true)
+    return () => {
+      document.removeEventListener("click", onClick, true)
+      window.removeEventListener("toploader:start", onStart as EventListener)
+      window.removeEventListener("toploader:stop", onStop as EventListener)
+      if (timer.current) clearInterval(timer.current)
+    }
   }, [])
 
   // Complete when path changes

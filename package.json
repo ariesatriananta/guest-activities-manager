@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "cross-env NEXT_DISABLE_DEVTOOLS=1 next dev",
+    "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true});require('fs').rmSync('.turbo',{recursive:true,force:true});require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\"",
     "lint": "next lint",
     "start": "cross-env NEXT_DISABLE_DEVTOOLS=1 next start"
   },
