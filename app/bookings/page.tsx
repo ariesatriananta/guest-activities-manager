@@ -25,6 +25,7 @@ function BookingsContent() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [visibleCount, setVisibleCount] = useState(20)
   const { data: bookings, isLoading } = useBookings()
   const { data: categories } = useCategories()
   const { data: activities } = useActivities()
@@ -61,6 +62,10 @@ function BookingsContent() {
       return true
     })
   }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, venues, search, activities])
+
+  const visibleBookings = useMemo(() => {
+    return (filteredBookings || []).slice(0, visibleCount)
+  }, [filteredBookings, visibleCount])
 
   // Derive active filter count for badge
   const activeFilterCount = useMemo(() => {
@@ -103,6 +108,7 @@ function BookingsContent() {
     const qs = params.toString()
     const url = qs ? `?${qs}` : ""
     router.replace(`/bookings${url}`, { scroll: false })
+    setVisibleCount(20)
   }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, router])
 
   const exportToCSV = () => {
@@ -204,7 +210,7 @@ function BookingsContent() {
             <div className="text-center text-muted-foreground">No bookings found</div>
           ) : (
             <div className="space-y-3">
-              {filteredBookings.map((booking) => {
+              {visibleBookings.map((booking) => {
                 const venue = venues?.find((v) => v.id === booking.venueId)
                 const activity = activities?.find((a) => a.id === booking.activityId)
                 return (
@@ -227,6 +233,12 @@ function BookingsContent() {
                   </Link>
                 )
               })}
+              <div className="pt-1 flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">Showing {visibleBookings.length} of {filteredBookings.length}</div>
+                {visibleBookings.length < filteredBookings.length && (
+                  <Button size="sm" variant="outline" onClick={() => setVisibleCount((c) => c + 20)}>Load more</Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -267,7 +279,7 @@ function BookingsContent() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredBookings?.map((booking) => {
+                  visibleBookings?.map((booking) => {
                     const venue = venues?.find((v) => v.id === booking.venueId)
                     return (
                       <TableRow key={booking.id}>
@@ -295,6 +307,12 @@ function BookingsContent() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">Showing {visibleBookings.length} of {filteredBookings.length}</div>
+            {visibleBookings.length < filteredBookings.length && (
+              <Button size="sm" variant="outline" onClick={() => setVisibleCount((c) => c + 20)}>Load more</Button>
+            )}
           </div>
         </CardContent>
       </Card>
