@@ -50,7 +50,19 @@ export default function BEOPage({ params }: { params: Promise<{ id: string }> })
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Booking not found</p>
-          <Button onClick={() => router.push("/bookings")}>Back to Bookings</Button>
+          <Button
+            onClick={() => {
+              try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back()
+              } else {
+                router.push('/bookings')
+              }
+              setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
+            }}
+          >
+            Back to Bookings
+          </Button>
         </div>
       </div>
     )
@@ -61,11 +73,20 @@ export default function BEOPage({ params }: { params: Promise<{ id: string }> })
       {/* Print Controls - Hidden when printing */}
       <div className="print:hidden bg-background border-b border-border p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Button variant="outline" asChild>
-            <Link href={`/bookings/${booking.id}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Link>
+          <Button
+            variant="outline"
+            onClick={() => {
+              try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back()
+              } else {
+                router.push('/bookings')
+              }
+              setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
+            }}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
           </Button>
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />

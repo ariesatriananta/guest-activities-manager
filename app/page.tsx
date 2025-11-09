@@ -351,9 +351,9 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <div className="flex-shrink-0 sm:w-20 w-full sm:text-left">
+                      <div className="flex-1 min-w-0 sm:text-left">
                         <div className="flex items-center mb-1 w-full min-w-0">
-                          <h4 className="font-semibold truncate flex-1 min-w-0">{activity?.name}</h4>
+                          <h4 className="font-semibold truncate sm:whitespace-normal flex-1 min-w-0">{activity?.name}</h4>
                           <div className="ml-auto sm:hidden">
                             <Button variant="outline" size="sm" className="shrink-0" asChild disabled={navigatingId === booking.id}>
                               <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
@@ -367,20 +367,20 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground space-y-1 min-w-0">
-                          <p className="flex items-center gap-1 truncate">
+                          <p className="flex items-center gap-1 truncate sm:whitespace-normal">
                             <User className="h-3.5 w-3.5 opacity-70" />
                             <span className="font-medium">Guest:</span>
-                            <span className="truncate">{booking.guestName} ({booking.suiteNumber})</span>
+                            <span className="truncate sm:whitespace-normal">{booking.guestName} ({booking.suiteNumber})</span>
                           </p>
-                          <div className="flex items-center gap-1 truncate">
+                          <div className="flex items-center gap-1 truncate sm:whitespace-normal">
                             <MapPin className="h-3.5 w-3.5 opacity-70" />
                             <span className="font-medium">Venue:</span>
-                            <span className="truncate">{venue?.name}</span>
+                            <span className="truncate sm:whitespace-normal">{venue?.name}</span>
                             <span className="mx-1">{" \u2022 "}</span>
                             <span className="font-medium">Pax:</span> {booking.pax}
                           </div>
                           {(booking.gaName || booking.driverName) && (
-                            <p className="flex items-center gap-1 truncate">
+                            <p className="flex items-center gap-1 truncate sm:whitespace-normal">
                               <Users className="h-3.5 w-3.5 opacity-70" />
                               {booking.gaName && (
                                 <>
@@ -395,7 +395,7 @@ export default function DashboardPage() {
                               )}
                             </p>
                           )}
-                          {booking.remark && <p className="italic truncate">{booking.remark}</p>}
+                          {booking.remark && <p className="italic truncate sm:whitespace-normal">{booking.remark}</p>}
                         </div>
                       </div>
 

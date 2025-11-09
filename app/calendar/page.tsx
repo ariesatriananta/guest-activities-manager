@@ -325,21 +325,6 @@ function CalendarContent() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-4 items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded" style={{ backgroundColor: "#10b981" }} />
-          <span className="text-sm">Activities</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded" style={{ backgroundColor: "#f59e0b" }} />
-          <span className="text-sm">Special Dining</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded" style={{ backgroundColor: "#8b5cf6" }} />
-          <span className="text-sm">Spiritual</span>
-        </div>
-      </div>
-
       <BookingDrawer
         booking={selectedBooking}
         open={drawerOpen}

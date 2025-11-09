@@ -12,6 +12,7 @@ import Link from "next/link"
 import { use } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { BookingFormData } from "@/lib/types"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,18 +54,34 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           status: data.status,
         },
       })
-      router.push("/bookings")
+      toast.success("Booking updated")
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        router.back()
+      } else {
+        router.push('/bookings')
+      }
+      setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
     } catch (error) {
       console.error("[v0] Failed to update booking:", error)
+      toast.error((error as any)?.message || "Failed to update booking")
     }
   }
 
   const handleDelete = async () => {
     try {
       await deleteBooking.mutateAsync(id)
-      router.push("/bookings")
+      toast.success("Booking deleted")
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        router.back()
+      } else {
+        router.push('/bookings')
+      }
+      setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
     } catch (error) {
       console.error("[v0] Failed to delete booking:", error)
+      toast.error((error as any)?.message || "Failed to delete booking")
     }
   }
 
@@ -123,10 +140,21 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/bookings">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  router.back()
+                } else {
+                  router.push('/bookings')
+                }
+                setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
+              }}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <h1 className="text-3xl font-bold">Edit Booking</h1>
@@ -180,7 +208,13 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
                 status: booking.status,
               }}
               onSubmit={handleSubmit}
-              onCancel={() => router.push("/bookings")}
+              onCancel={() => {
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  router.back()
+                } else {
+                  router.push('/bookings')
+                }
+              }}
               excludeBookingId={id}
             />
           </CardContent>

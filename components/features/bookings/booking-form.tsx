@@ -16,6 +16,7 @@ import { useVenues, useVenue } from "@/lib/hooks/useVenues"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCheckVenueConflict } from "@/lib/hooks/useBookings"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import {
   AlertDialog,
@@ -51,6 +52,7 @@ interface BookingFormProps {
 }
 
 export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingId }: BookingFormProps) {
+  const router = useRouter()
   const [showConflictDialog, setShowConflictDialog] = useState(false)
   const [conflictVenueName, setConflictVenueName] = useState("")
   const [conflictDate, setConflictDate] = useState("")
@@ -394,11 +396,27 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
           />
 
           <div className="flex gap-2 justify-end max-sm:flex-col max-sm:items-stretch">
-            {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
-                Back
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (onCancel) {
+                  onCancel()
+                } else {
+                  try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+                  // Prefer history back, fallback to /bookings
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    router.back()
+                  } else {
+                    router.push('/bookings')
+                  }
+                  setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
+                }
+              }}
+              disabled={submitting}
+            >
+              Back
+            </Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitting ? "Saving..." : "Save Booking"}

@@ -104,19 +104,16 @@ END:VCALENDAR`
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Booking Details</SheetTitle>
-          <SheetDescription>View and manage this booking</SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">{activity?.name}</h3>
+        <SheetHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pt-6 pr-10 pb-3">
+          <SheetTitle className="text-base sm:text-lg">Booking Details</SheetTitle>
+          <SheetDescription className="text-xs sm:text-sm">View and manage this booking</SheetDescription>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <h3 className="text-sm sm:text-base font-semibold truncate">{activity?.name}</h3>
             <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
           </div>
+        </SheetHeader>
 
-          <Separator />
-
+        <div className="mt-3 space-y-6">
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Date</p>
@@ -185,19 +182,9 @@ END:VCALENDAR`
               Print BEO
             </Button>
 
-            <Button variant="outline" className="w-full bg-transparent" onClick={handleExportICS}>
-              <Download className="h-4 w-4 mr-2" />
-              Export ICS
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full bg-transparent"
-              onClick={handleDuplicate}
-              disabled={isDuplicating}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              {isDuplicating ? "Duplicating..." : "Duplicate"}
+            {/* Close at the very bottom */}
+            <Button variant="outline" className="w-full bg-transparent" onClick={onClose}>
+              Close
             </Button>
           </div>
         </div>
