@@ -70,9 +70,11 @@ export function VenuesSettings() {
       if (editingVenue) {
         await updateVenue.mutateAsync({
           id: editingVenue.id,
-          name: formData.name,
-          location: formData.location || undefined,
-          capacity: formData.capacity,
+          data: {
+            name: formData.name,
+            location: formData.location || undefined,
+            capacity: formData.capacity,
+          },
         })
         toast.success("Venue updated")
       } else {

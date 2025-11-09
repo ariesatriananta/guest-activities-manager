@@ -84,11 +84,13 @@ export function ActivitiesSettings() {
       if (editingActivity) {
         await updateActivity.mutateAsync({
           id: editingActivity.id,
-          name: formData.name,
-          categoryId: formData.categoryId,
-          description: formData.description || undefined,
-          duration: formData.duration,
-          maxCapacity: formData.maxCapacity,
+          data:{
+            name: formData.name,
+            categoryId: formData.categoryId,
+            description: formData.description || undefined,
+            duration: formData.duration,
+            maxCapacity: formData.maxCapacity,
+          }
         })
         toast.success("Activity updated")
       } else {

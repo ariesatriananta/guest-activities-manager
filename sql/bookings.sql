@@ -143,3 +143,13 @@ CROSS JOIN (SELECT id FROM venues WHERE name = 'Restaurant' LIMIT 1) v
 WHERE NOT EXISTS (
   SELECT 1 FROM bookings b WHERE b.date = base.d + interval '2 day' AND b.start_time = '10:00'::time AND b.venue_id = v.id AND b.guest_name = 'Lisa Anderson'
 );
+
+
+-- buang constraint lama
+ALTER TABLE bookings
+  DROP CONSTRAINT IF EXISTS bookings_status_check;
+
+-- bikin constraint baru termasuk 'tentative'
+ALTER TABLE bookings
+  ADD CONSTRAINT bookings_status_check
+  CHECK (status IN ('tentative','confirmed','cancelled'));
