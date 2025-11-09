@@ -58,8 +58,10 @@ export function CategoriesSettings() {
       if (editingCategory) {
         await updateCategory.mutateAsync({
           id: editingCategory.id,
-          name: formData.name,
-          description: formData.description || undefined,
+          data: {
+            name: formData.name,
+            description: formData.description || undefined,
+          },
         })
         toast.success("Category updated")
       } else {
