@@ -241,6 +241,8 @@ function CalendarContent() {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
               initialView={isMobile ? "listWeek" : "dayGridMonth"}
               timeZone="Asia/Jakarta"
+              eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+              slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
               views={{ dayGridMonth: { dayMaxEvents: 3 } }}
               headerToolbar={
                 isMobile

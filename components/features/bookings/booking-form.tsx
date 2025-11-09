@@ -59,6 +59,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [conflictGuest, setConflictGuest] = useState("")
   const [conflictActivity, setConflictActivity] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const { data: categories, isLoading: loadingCategories } = useCategories()
   const { data: venues, isLoading: loadingVenues } = useVenues()
@@ -139,6 +140,61 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
     }
   }
 
+  // Detect mobile viewport for custom 24h time picker
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 640px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  const renderTimeSelect = (value: string, onChange: (v: string) => void) => {
+    const [hRaw, mRaw] = (value || '').split(':')
+    const hh = (hRaw ?? '00').padStart(2, '0')
+    const mm = (mRaw ?? '00').padStart(2, '0')
+    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+    const minuteOptions = ['00', '15', '30', '45']
+    const mmSel = minuteOptions.includes(mm)
+      ? mm
+      : minuteOptions[Math.floor((parseInt(mm || '0', 10) % 60) / 15)]
+    return (
+      <div className="flex items-center gap-2">
+        <Select value={hh} onValueChange={(h) => onChange(`${h}:${mm}`)}>
+          <SelectTrigger className="w-24"><SelectValue placeholder="HH" /></SelectTrigger>
+          <SelectContent className="max-h-60">
+            {hours.map((h) => (
+              <SelectItem key={h} value={h}>{h}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-muted-foreground">:</span>
+        <Select value={mmSel} onValueChange={(m) => onChange(`${hh}:${m}`)}>
+          <SelectTrigger className="w-24"><SelectValue placeholder="MM" /></SelectTrigger>
+          <SelectContent className="max-h-60">
+            {minuteOptions.map((m) => (
+              <SelectItem key={m} value={m}>{m}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )
+  }
+
+  const getStatusStyle = (status?: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300'
+      case 'draft':
+        return 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300'
+      case 'cancelled':
+        return 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300'
+      default:
+        return ''
+    }
+  }
+
   return (
     <>
       {(loadingCategories || loadingVenues) ? (
@@ -160,125 +216,143 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <DateField value={field.value} onChange={field.onChange} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="startTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="endTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="categoryId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="activityId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Activity</FormLabel>
-                  <div className="flex gap-2 max-sm:flex-col">
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategoryId || loadingActivities}>
+            {/* Status + Date side-by-side on mobile */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={loadingActivities ? "Loading..." : "Select activity"} />
+                        <SelectTrigger className={`w-full border ${getStatusStyle(field.value)}`}>
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {activities?.map((activity) => (
-                          <SelectItem key={activity.id} value={activity.id}>
-                            {activity.name}
+                        <SelectItem value="draft" className="data-[highlighted]:bg-amber-500/15 data-[state=checked]:bg-amber-500/15">
+                          Draft
+                        </SelectItem>
+                        <SelectItem value="confirmed" className="data-[highlighted]:bg-emerald-500/15 data-[state=checked]:bg-emerald-500/15">
+                          Confirmed
+                        </SelectItem>
+                        <SelectItem value="cancelled" className="data-[highlighted]:bg-red-500/15 data-[state=checked]:bg-red-500/15">
+                          Cancelled
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <DateField value={field.value} onChange={field.onChange} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 relative">
+              <div aria-hidden className="pointer-events-none absolute inset-y-1 left-1/2 -translate-x-1/2 w-px bg-border" />
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <FormControl>
+                      {isMobile ? (
+                        renderTimeSelect(field.value, (v) => field.onChange(v))
+                      ) : (
+                        <Input type="time" {...field} />
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time</FormLabel>
+                    <FormControl>
+                      {isMobile ? (
+                        renderTimeSelect(field.value, (v) => field.onChange(v))
+                      ) : (
+                        <Input type="time" {...field} />
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Category + Activity side-by-side; hide Preset for now */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {activities?.find((a) => a.name === "Ramayana Royal Feast Dinner") && (
-                      <Button type="button" variant="outline" size="sm" onClick={applyRamayanaPreset}>
-                        Preset
-                      </Button>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="activityId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activity</FormLabel>
+                    <div className="flex gap-2 max-sm:flex-col">
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategoryId || loadingActivities}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={loadingActivities ? "Loading..." : "Select activity"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {activities?.map((activity) => (
+                            <SelectItem key={activity.id} value={activity.id}>
+                              {activity.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {/* Preset hidden for now */}
+                      {/* <Button type="button" variant="outline" size="sm" onClick={applyRamayanaPreset}>Preset</Button> */}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
@@ -310,75 +384,84 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="guestName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Guest Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Guest / Suite / Pax in 50% / 30% / 20% */}
+            <div className="grid grid-cols-10 gap-4">
+              <div className="col-span-5">
+                <FormField
+                  control={form.control}
+                  name="guestName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Guest Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="col-span-3">
+                <FormField
+                  control={form.control}
+                  name="suiteNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Suite</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="col-span-2">
+                <FormField
+                  control={form.control}
+                  name="pax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pax</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="1" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-            <FormField
-              control={form.control}
-              name="suiteNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Suite Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="pax"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pax</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="1" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="gaName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>GA Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="driverName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Driver Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* GA & Driver side-by-side on mobile */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gaName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GA Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="driverName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Driver Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <FormField
@@ -396,6 +479,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
           />
 
           <div className="flex gap-2 justify-end max-sm:flex-col max-sm:items-stretch">
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitting ? "Saving..." : "Save Booking"}
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -416,10 +503,6 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               disabled={submitting}
             >
               Back
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {submitting ? "Saving..." : "Save Booking"}
             </Button>
           </div>
         </form>
@@ -452,4 +535,3 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
 // Inline mobile date picker using Dialog + Calendar
 // cleaned: single Popover calendar pattern for all devices
-

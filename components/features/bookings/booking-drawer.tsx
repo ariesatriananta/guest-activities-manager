@@ -39,6 +39,15 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
     return `${day}, ${d}/${m}/${y}`
   }
 
+  const formatDateTimeWithDayJakarta = (iso: string) => {
+    if (!iso) return ""
+    const dt = new Date(iso)
+    const day = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Jakarta" }).format(dt)
+    const datePart = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Jakarta" }).format(dt)
+    const timePart = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).format(dt)
+    return `${day}, ${datePart}, ${timePart} (WIB)`
+  }
+
   const getStatusColor = (status: BookingStatus) => {
     switch (status) {
       case "confirmed":
@@ -175,6 +184,10 @@ END:VCALENDAR`
                 <p className="font-medium">{booking.remark}</p>
               </div>
             )}
+            <div>
+              <p className="text-sm text-muted-foreground">Created</p>
+              <p className="font-medium">{formatDateTimeWithDayJakarta(booking.createdAt)}</p>
+            </div>
           </div>
 
           <Separator />
