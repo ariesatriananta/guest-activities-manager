@@ -135,32 +135,48 @@ function CalendarContent() {
   }, [search, dateFrom, dateTo, venueFilter, categoryFilter])
 
   const calendarEvents = useMemo(() => {
-    if (!filteredBookings || !categories) return []
+    if (!filteredBookings || !categories || !activities) return []
+
+    // Map category -> stable color (desktop only)
+    const palette = [
+      "#3b82f6", // blue-500
+      "#10b981", // emerald-500
+      "#f59e0b", // amber-500
+      "#8b5cf6", // violet-500
+      "#ef4444", // red-500
+      "#14b8a6", // teal-500
+      "#f43f5e", // rose-500
+      "#22c55e", // green-500
+      "#06b6d4", // cyan-500
+      "#eab308", // yellow-500
+    ]
+    const categoryIndex = new Map<string, number>()
+    categories.forEach((c, i) => categoryIndex.set(c.id, i))
+
+    // Map activity -> category
+    const activityToCategory = new Map<string, string>()
+    activities.forEach((a) => activityToCategory.set(a.id, a.categoryId))
 
     return filteredBookings.map((booking) => {
-      let color = "#3b82f6"
+      const catId = activityToCategory.get(booking.activityId)
+      const idx = typeof catId !== "undefined" && categoryIndex.has(catId) ? (categoryIndex.get(catId) as number) : 0
+      const color = palette[idx % palette.length]
 
-      if (booking.activityId.includes("din")) {
-        color = "#f59e0b"
-      } else if (booking.activityId.includes("spi")) {
-        color = "#8b5cf6"
-      } else {
-        color = "#10b981"
-      }
+      // Only colorize on desktop; on mobile omit colors
+      const colorProps = isMobile ? {} : { backgroundColor: color, borderColor: color }
 
       return {
         id: booking.id,
         title: booking.guestName,
         start: `${booking.date}T${booking.startTime}`,
         end: `${booking.date}T${booking.endTime}`,
-        backgroundColor: color,
-        borderColor: color,
+        ...colorProps,
         extendedProps: {
           booking,
         },
       }
     })
-  }, [filteredBookings, categories])
+  }, [filteredBookings, categories, activities, isMobile])
 
   const handleEventClick = (info: EventClickArg) => {
     const booking = info.event.extendedProps.booking as Booking

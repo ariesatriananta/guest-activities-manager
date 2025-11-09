@@ -116,7 +116,7 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="tentative">Tentative</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>

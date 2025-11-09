@@ -41,7 +41,7 @@ const bookingSchema = z.object({
   gaName: z.string().default(""),
   driverName: z.string().default(""),
   remark: z.string().default(""),
-  status: z.enum(["draft", "confirmed", "cancelled"]),
+  status: z.enum(["tentative", "confirmed", "cancelled"]),
 })
 
 interface BookingFormProps {
@@ -186,7 +186,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
     switch (status) {
       case 'confirmed':
         return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300'
-      case 'draft':
+      case 'tentative':
         return 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300'
       case 'cancelled':
         return 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300'
@@ -231,8 +231,8 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="draft" className="data-[highlighted]:bg-amber-500/15 data-[state=checked]:bg-amber-500/15">
-                          Draft
+                        <SelectItem value="tentative" className="data-[highlighted]:bg-amber-500/15 data-[state=checked]:bg-amber-500/15">
+                          Tentative
                         </SelectItem>
                         <SelectItem value="confirmed" className="data-[highlighted]:bg-emerald-500/15 data-[state=checked]:bg-emerald-500/15">
                           Confirmed

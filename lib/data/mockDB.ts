@@ -449,7 +449,7 @@ export async function seed(): Promise<void> {
       status: "confirmed",
       createdAt: new Date(today.getTime() - 86400000).toISOString(),
     },
-    // Draft bookings
+    // Tentative bookings
     {
       id: "book-10",
       date: new Date(today.getTime() + 259200000).toISOString().split("T")[0],
@@ -463,7 +463,7 @@ export async function seed(): Promise<void> {
       gaName: "Sarah",
       driverName: "Made",
       remark: "Proposal dinner",
-      status: "draft",
+      status: "tentative",
       createdAt: new Date().toISOString(),
     },
     // Cancelled booking

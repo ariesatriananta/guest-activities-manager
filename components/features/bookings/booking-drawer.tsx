@@ -52,7 +52,7 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
     switch (status) {
       case "confirmed":
         return "default"
-      case "draft":
+      case "tentative":
         return "secondary"
       case "cancelled":
         return "destructive"
@@ -108,7 +108,7 @@ END:VCALENDAR`
         gaName: booking.gaName,
         driverName: booking.driverName,
         remark: `${booking.remark} (Duplicate)`,
-        status: "draft",
+        status: "tentative",
       })
       onClose()
     } catch (error) {

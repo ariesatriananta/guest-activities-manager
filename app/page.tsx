@@ -56,9 +56,9 @@ export default function DashboardPage() {
     if (!bookings || !venues) return []
     const warns: string[] = []
 
-    const draftsToday = todayBookings.filter((b) => b.status === "draft")
-    if (draftsToday.length > 0) {
-      warns.push(`${draftsToday.length} draft booking(s) for today need confirmation`)
+    const tentativesToday = todayBookings.filter((b) => b.status === "tentative")
+    if (tentativesToday.length > 0) {
+      warns.push(`${tentativesToday.length} tentative booking(s) for today need confirmation`)
     }
 
     const missingStaff = todayBookings.filter((b) => !b.gaName || !b.driverName)
@@ -70,14 +70,14 @@ export default function DashboardPage() {
   }, [todayBookings, bookings, venues])
 
   const stats = useMemo(() => {
-    if (!bookings) return { total: 0, confirmed: 0, draft: 0, todayPax: 0 }
+    if (!bookings) return { total: 0, confirmed: 0, tentative: 0, todayPax: 0 }
 
     const todayPax = todayBookings.reduce((sum, b) => sum + b.pax, 0)
 
     return {
       total: bookings.length,
       confirmed: bookings.filter((b) => b.status === "confirmed").length,
-      draft: bookings.filter((b) => b.status === "draft").length,
+      tentative: bookings.filter((b) => b.status === "tentative").length,
       todayPax,
     }
   }, [bookings, todayBookings])
@@ -86,7 +86,7 @@ export default function DashboardPage() {
     switch (status) {
       case "confirmed":
         return "default"
-      case "draft":
+      case "tentative":
         return "secondary"
       case "cancelled":
         return "destructive"
@@ -97,7 +97,7 @@ export default function DashboardPage() {
     switch (status) {
       case "confirmed":
         return "bg-emerald-500/35"
-      case "draft":
+      case "tentative":
         return "bg-amber-500/35"
       case "cancelled":
         return "bg-red-500/35"
@@ -108,7 +108,7 @@ export default function DashboardPage() {
     switch (status) {
       case "confirmed":
         return "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300"
-      case "draft":
+      case "tentative":
         return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
       case "cancelled":
         return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
@@ -192,10 +192,10 @@ export default function DashboardPage() {
 
             <Card className="min-w-[150px] p-2 bg-gradient-to-br from-amber-500/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <div className="space-y-1">
-                <div className="text-[10px] font-medium text-muted-foreground">Draft</div>
+                <div className="text-[10px] font-medium text-muted-foreground">Tentative</div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-semibold">{stats.draft}</span>
+                    <span className="text-lg font-semibold">{stats.tentative}</span>
                   </div>
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -256,11 +256,11 @@ export default function DashboardPage() {
 
           <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-amber-500/10 to-transparent">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
-              <CardTitle className="text-sm font-medium">Draft</CardTitle>
+              <CardTitle className="text-sm font-medium">Tentative</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="py-2">
-              <div className="text-2xl font-bold">{stats.draft}</div>
+              <div className="text-2xl font-bold">{stats.tentative}</div>
               <p className="text-xs text-muted-foreground">Needs confirmation</p>
             </CardContent>
           </Card>

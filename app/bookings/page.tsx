@@ -198,7 +198,7 @@ function BookingsContent() {
     switch (status) {
       case "confirmed":
         return "default"
-      case "draft":
+      case "tentative":
         return "secondary"
       case "cancelled":
         return "destructive"
@@ -326,11 +326,11 @@ function BookingsContent() {
       </Card>
 
       {/* Desktop table */}
-      <Card className="hidden sm:block">
-        <CardHeader>
-          <CardTitle>All Bookings</CardTitle>
-          <CardDescription>{filteredBookings?.length || 0} booking(s) found</CardDescription>
-        </CardHeader>
+          <Card className="hidden sm:block">
+            <CardHeader>
+              <CardTitle>All Bookings</CardTitle>
+              <CardDescription>{filteredBookings?.length || 0} booking(s) found</CardDescription>
+            </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>

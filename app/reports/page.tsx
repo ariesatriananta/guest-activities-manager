@@ -145,14 +145,14 @@ function ReportsContent() {
   const monthlyTrend = useMemo(() => {
     if (!bookings) return []
 
-    const monthMap = new Map<string, { confirmed: number; draft: number; cancelled: number }>()
+    const monthMap = new Map<string, { confirmed: number; tentative: number; cancelled: number }>()
 
     bookings.forEach((booking) => {
       const month = booking.date.slice(0, 7)
-      const current = monthMap.get(month) || { confirmed: 0, draft: 0, cancelled: 0 }
+      const current = monthMap.get(month) || { confirmed: 0, tentative: 0, cancelled: 0 }
 
       if (booking.status === "confirmed") current.confirmed++
-      else if (booking.status === "draft") current.draft++
+      else if (booking.status === "tentative") current.tentative++
       else if (booking.status === "cancelled") current.cancelled++
 
       monthMap.set(month, current)
@@ -162,7 +162,7 @@ function ReportsContent() {
       .map(([month, data]) => ({
         month,
         confirmed: data.confirmed,
-        draft: data.draft,
+        tentative: data.tentative,
         cancelled: data.cancelled,
       }))
       .sort((a, b) => a.month.localeCompare(b.month))
@@ -440,8 +440,8 @@ function ReportsContent() {
                 label: "Confirmed",
                 color: "hsl(var(--chart-1))",
               },
-              draft: {
-                label: "Draft",
+              tentative: {
+                label: "Tentative",
                 color: "hsl(var(--chart-3))",
               },
               cancelled: {
@@ -459,7 +459,7 @@ function ReportsContent() {
                 <ChartTooltip content={<ChartTooltipContent />} />
                 {!isMobile && <Legend />}
                 <Line type="monotone" dataKey="confirmed" stroke="var(--color-confirmed)" strokeWidth={2} />
-                <Line type="monotone" dataKey="draft" stroke="var(--color-draft)" strokeWidth={2} />
+                <Line type="monotone" dataKey="tentative" stroke="var(--color-tentative)" strokeWidth={2} />
                 <Line type="monotone" dataKey="cancelled" stroke="var(--color-cancelled)" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
