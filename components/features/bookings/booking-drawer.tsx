@@ -31,6 +31,14 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
   const activity = activities?.find((a) => a.id === booking.activityId)
   const venue = venues?.find((v) => v.id === booking.venueId)
 
+  const formatDateWithDay = (iso: string) => {
+    if (!iso) return ""
+    const [y, m, d] = iso.split("-")
+    const date = new Date(`${iso}T00:00:00+07:00`)
+    const day = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Jakarta" }).format(date)
+    return `${day}, ${d}/${m}/${y}`
+  }
+
   const getStatusColor = (status: BookingStatus) => {
     switch (status) {
       case "confirmed":
@@ -117,7 +125,7 @@ END:VCALENDAR`
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Date</p>
-              <p className="font-medium">{booking.date}</p>
+              <p className="font-medium">{formatDateWithDay(booking.date)}</p>
             </div>
 
             <div>

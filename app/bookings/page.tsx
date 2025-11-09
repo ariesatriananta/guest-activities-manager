@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Eye, FilterX, Loader2, RefreshCcw } from "lucide-react"
+import { Download, Eye, Edit, FilterX, Loader2, RefreshCcw } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
 import { useMemo, useState, useEffect } from "react"
 import { NavLayout } from "@/components/layout/nav-layout"
-import type { BookingStatus } from "@/lib/types"
+import type { BookingStatus, Booking } from "@/lib/types"
+import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 
 function BookingsContent() {
   const [dateFrom, setDateFrom] = useState("")
@@ -27,6 +28,8 @@ function BookingsContent() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [visibleCount, setVisibleCount] = useState(20)
   const { data: bookings, isLoading, mutate } = useBookings()
@@ -35,9 +38,14 @@ function BookingsContent() {
   const { data: venues } = useVenues()
   const router = useRouter()
   const searchParams = useSearchParams()
+
   const goTo = (id: string) => {
     setNavigatingId(id)
     router.push(`/bookings/${id}`)
+  }
+  const openView = (booking: Booking) => {
+    setSelectedBooking(booking)
+    setDrawerOpen(true)
   }
 
   const filteredBookings = useMemo(() => {
@@ -118,29 +126,63 @@ function BookingsContent() {
     setVisibleCount(20)
   }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, router])
 
-  const exportToCSV = () => {
+  const exportToXLS = () => {
     if (!filteredBookings || !venues) return
 
-    const headers = ["Date", "Time", "Guest", "Suite", "Pax", "Venue", "Status"]
-    const rows = filteredBookings.map((booking) => {
-      const venue = venues.find((v) => v.id === booking.venueId)
+    const headers = [
+      "Date",
+      "Time",
+      "Guest",
+      "Suite",
+      "Pax",
+      "Activities",
+      "Venue",
+      "GA name",
+      "Driver name",
+      "Remark",
+      "Status",
+    ]
+
+    const activityMap = new Map<string, string>()
+    activities?.forEach((a) => activityMap.set(a.id, a.name))
+    const venueMap = new Map<string, string>()
+    venues?.forEach((v) => venueMap.set(v.id, v.name))
+
+    const esc = (s: any) =>
+      String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+    const rows = filteredBookings.map((b) => {
+      const [y, m, d] = (b.date || "").split("-")
+      const date = d && m && y ? `${d}/${m}/${y}` : b.date
+      const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
+      const activityName = activityMap.get(b.activityId) || ""
+      const venueName = venueMap.get(b.venueId) || ""
       return [
-        booking.date,
-        `${booking.startTime}-${booking.endTime}`,
-        booking.guestName,
-        booking.suiteNumber,
-        booking.pax.toString(),
-        venue?.name || "",
-        booking.status,
+        date,
+        time,
+        b.guestName,
+        b.suiteNumber,
+        String(b.pax ?? ""),
+        activityName,
+        venueName,
+        b.gaName || "",
+        b.driverName || "",
+        b.remark || "",
+        b.status,
       ]
     })
 
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
+    const thead = `<thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`
+    const tbody = `<tbody>${rows
+      .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
+      .join("")}</tbody>`
+    const html = `<table>${thead}${tbody}</table>`
+
+    const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `bookings-${new Date().toISOString().split("T")[0]}.csv`
+    a.download = `bookings-${new Date().toISOString().split("T")[0]}.xls`
     try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     a.click()
     try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
@@ -181,7 +223,7 @@ function BookingsContent() {
           <Button onClick={handleRefresh} size="icon-sm" variant="outline" aria-label="Refresh" disabled={refreshing}>
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           </Button>
-          <Button onClick={exportToCSV} size="icon-sm" variant="outline" aria-label="Export CSV">
+          <Button onClick={exportToXLS} size="icon-sm" variant="outline" aria-label="Export Excel">
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -299,6 +341,7 @@ function BookingsContent() {
                   <TableHead>Guest</TableHead>
                   <TableHead>Suite</TableHead>
                   <TableHead>Pax</TableHead>
+                  <TableHead>Activity</TableHead>
                   <TableHead>Venue</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -313,6 +356,7 @@ function BookingsContent() {
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-full" /></TableCell>
@@ -320,36 +364,43 @@ function BookingsContent() {
                   ))
                 ) : filteredBookings?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground">
                       No bookings found
                     </TableCell>
                   </TableRow>
                 ) : (
                   visibleBookings?.map((booking) => {
                     const venue = venues?.find((v) => v.id === booking.venueId)
+                    const activity = activities?.find((a) => a.id === booking.activityId)
                     return (
                       <TableRow key={booking.id}>
-                        <TableCell>{booking.date}</TableCell>
+                        <TableCell>{formatDateDDMMYYYY(booking.date)}</TableCell>
                         <TableCell className="whitespace-nowrap">
                           {booking.startTime} - {booking.endTime}
                         </TableCell>
                         <TableCell>{booking.guestName}</TableCell>
                         <TableCell>{booking.suiteNumber}</TableCell>
                         <TableCell>{booking.pax}</TableCell>
+                        <TableCell>{activity?.name}</TableCell>
                         <TableCell>{venue?.name}</TableCell>
                         <TableCell>
                           <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }}>
-                              {navigatingId === booking.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Link>
-                          </Button>
+                          <div className="inline-flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openView(booking as Booking)} aria-label="View">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" asChild aria-label="Edit">
+                              <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }}>
+                                {navigatingId === booking.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Edit className="h-4 w-4" />
+                                )}
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -366,6 +417,12 @@ function BookingsContent() {
           </div>
         </CardContent>
       </Card>
+      <BookingDrawer
+        booking={selectedBooking}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onClose={() => { setDrawerOpen(false); setSelectedBooking(null) }}
+      />
     </div>
   )
 }
