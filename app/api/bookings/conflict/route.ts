@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         guestName: detail[0]?.guest_name,
         activityName: detail[0]?.activity_name,
         status: detail[0]?.status,
+        policy: "per_day_single",
       })
     }
     return NextResponse.json({ hasConflict: false })
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
         guestName: detail[0]?.guest_name,
         activityName: detail[0]?.activity_name,
         status: detail[0]?.status,
+        policy: "exclusive_time",
       })
     }
   }

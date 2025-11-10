@@ -59,6 +59,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [conflictGuest, setConflictGuest] = useState("")
   const [conflictActivity, setConflictActivity] = useState("")
   const [conflictStatus, setConflictStatus] = useState("")
+  const [conflictPolicy, setConflictPolicy] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -131,6 +132,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
         setConflictGuest(conflict.guestName || "")
         setConflictActivity(conflict.activityName || "")
         setConflictStatus((conflict as any)?.status || "")
+        setConflictPolicy((conflict as any)?.policy || "")
         setShowConflictDialog(true)
         setSubmitting(false)
         try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
@@ -531,7 +533,12 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                   ) : null}.
                 </>
               ) : null}
-              {" "}This venue only allows one booking per day. Please select a different venue or date.
+              {" "}
+              {conflictPolicy === 'exclusive_time' ? (
+                <>This venue is exclusive by time. Overlapping time slots are not allowed. Please choose a different time or venue.</>
+              ) : (
+                <>This venue only allows one booking per day. Please select a different venue or date.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -7,6 +7,8 @@ import { useVenues, useCreateVenue, useUpdateVenue, useDeleteVenue } from "@/lib
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -36,6 +38,8 @@ export function VenuesSettings() {
     name: "",
     location: "",
     capacity: 10,
+    isSingleBookingPerDay: false,
+    isExclusiveByTime: false,
   })
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -49,6 +53,8 @@ export function VenuesSettings() {
         name: venue.name,
         location: venue.location || "",
         capacity: venue.capacity || 10,
+        isSingleBookingPerDay: venue.isSingleBookingPerDay,
+        isExclusiveByTime: (venue as any).isExclusiveByTime === true,
       })
     } else {
       setEditingVenue(null)
@@ -56,6 +62,8 @@ export function VenuesSettings() {
         name: "",
         location: "",
         capacity: 10,
+        isSingleBookingPerDay: false,
+        isExclusiveByTime: false,
       })
     }
     setDialogOpen(true)
@@ -74,6 +82,8 @@ export function VenuesSettings() {
             name: formData.name,
             location: formData.location || undefined,
             capacity: formData.capacity,
+            isSingleBookingPerDay: formData.isSingleBookingPerDay,
+            isExclusiveByTime: formData.isExclusiveByTime,
           },
         })
         toast.success("Venue updated")
@@ -82,6 +92,8 @@ export function VenuesSettings() {
           name: formData.name,
           location: formData.location || undefined,
           capacity: formData.capacity,
+          isSingleBookingPerDay: formData.isSingleBookingPerDay,
+          isExclusiveByTime: formData.isExclusiveByTime,
         })
         toast.success("Venue created")
       }
@@ -90,6 +102,8 @@ export function VenuesSettings() {
         name: "",
         location: "",
         capacity: 10,
+        isSingleBookingPerDay: false,
+        isExclusiveByTime: false,
       })
     } catch (error) {
       console.error("[v0] Failed to save venue:", error)
@@ -144,7 +158,8 @@ export function VenuesSettings() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Per Day Single</TableHead>
+                <TableHead>Exclusive by Time</TableHead>
                 <TableHead>Capacity</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -154,14 +169,15 @@ export function VenuesSettings() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium"><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                   </TableRow>
                 ))
               ) : venues?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     No venues found
                   </TableCell>
                 </TableRow>
@@ -169,7 +185,8 @@ export function VenuesSettings() {
                 venues?.map((venue) => (
                   <TableRow key={venue.id}>
                     <TableCell className="font-medium">{venue.name}</TableCell>
-                    <TableCell>{venue.location || "-"}</TableCell>
+                    <TableCell>{venue.isSingleBookingPerDay ? "Yes" : "-"}</TableCell>
+                    <TableCell>{(venue as any).isExclusiveByTime ? "Yes" : "-"}</TableCell>
                     <TableCell>{venue.capacity || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -227,6 +244,16 @@ export function VenuesSettings() {
                 min={1}
                 required
               />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <Label htmlFor="per-day-single" className="text-sm">Per Day Single</Label>
+                <Switch id="per-day-single" checked={formData.isSingleBookingPerDay} onCheckedChange={(v) => setFormData((d) => ({ ...d, isSingleBookingPerDay: v }))} />
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <Label htmlFor="exclusive-time" className="text-sm">Exclusive by Time</Label>
+                <Switch id="exclusive-time" checked={formData.isExclusiveByTime} onCheckedChange={(v) => setFormData((d) => ({ ...d, isExclusiveByTime: v }))} />
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
