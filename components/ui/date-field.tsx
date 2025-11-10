@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarCmp } from "@/components/ui/calendar"
 import { formatDateISOInTZ, JAKARTA_TZ, cn } from "@/lib/utils"
 import { Calendar as CalendarIcon, X as XIcon } from "lucide-react"
+import { useState } from "react"
 
 interface DateFieldProps {
   // Expects ISO value (YYYY-MM-DD); component will display as DD/MM/YYYY
@@ -26,9 +27,10 @@ function isoToDisplay(iso?: string) {
 
 export function DateField({ value, onChange, placeholder = "Pick a date", className, disabled, modal = false }: DateFieldProps) {
   const display = value ? isoToDisplay(value) : ""
+  const [open, setOpen] = useState(false)
   return (
     <div className={cn("relative", className)}>
-      <Popover modal={modal}>
+      <Popover modal={modal} open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button type="button" variant="outline" className={cn("w-full justify-start bg-transparent pr-9") } disabled={disabled}>
             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -39,7 +41,11 @@ export function DateField({ value, onChange, placeholder = "Pick a date", classN
           <CalendarCmp
             mode="single"
             selected={value ? new Date(value) : undefined}
-            onSelect={(d) => onChange(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")}
+            onSelect={(d) => {
+              onChange(d ? formatDateISOInTZ(d, JAKARTA_TZ) : "")
+              // Auto-close after date picked
+              if (d) setOpen(false)
+            }}
           />
         </PopoverContent>
       </Popover>
