@@ -8,14 +8,14 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const rows = await sql`
-    SELECT id, name, is_single_booking_per_day as "isSingleBookingPerDay", location, capacity, created_at, updated_at
+    SELECT id, name, is_single_booking_per_day as "isSingleBookingPerDay", is_exclusive_by_time as "isExclusiveByTime", location, capacity, created_at, updated_at
     FROM venues
     ORDER BY created_at DESC
   `
   return NextResponse.json(rows)
 }
 
-const createSchema = z.object({ name: z.string().min(1), location: z.string().optional(), capacity: z.number().int().min(1).optional(), isSingleBookingPerDay: z.boolean().optional() })
+const createSchema = z.object({ name: z.string().min(1), location: z.string().optional(), capacity: z.number().int().min(1).optional(), isSingleBookingPerDay: z.boolean().optional(), isExclusiveByTime: z.boolean().optional() })
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -23,11 +23,11 @@ export async function POST(req: Request) {
   const body = await req.json()
   const parsed = createSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 })
-  const { name, location, capacity, isSingleBookingPerDay } = parsed.data
+  const { name, location, capacity, isSingleBookingPerDay, isExclusiveByTime } = parsed.data
   const rows = await sql`
-    INSERT INTO venues (name, is_single_booking_per_day, location, capacity)
-    VALUES (${name}, ${isSingleBookingPerDay ?? false}, ${location ?? null}, ${capacity ?? null})
-    RETURNING id, name, is_single_booking_per_day as "isSingleBookingPerDay", location, capacity, created_at, updated_at
+    INSERT INTO venues (name, is_single_booking_per_day, is_exclusive_by_time, location, capacity)
+    VALUES (${name}, ${isSingleBookingPerDay ?? false}, ${isExclusiveByTime ?? false}, ${location ?? null}, ${capacity ?? null})
+    RETURNING id, name, is_single_booking_per_day as "isSingleBookingPerDay", is_exclusive_by_time as "isExclusiveByTime", location, capacity, created_at, updated_at
   `
   return NextResponse.json(rows[0], { status: 201 })
 }

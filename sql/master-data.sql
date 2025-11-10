@@ -60,12 +60,17 @@ CREATE TABLE IF NOT EXISTS venues (
   id                          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name                        text NOT NULL,
   is_single_booking_per_day   boolean NOT NULL DEFAULT false,
+  is_exclusive_by_time        boolean NOT NULL DEFAULT false,
   location                    text,
   capacity                    integer,
   created_at                  timestamptz NOT NULL DEFAULT now(),
   updated_at                  timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT uq_venues_name UNIQUE(name)
 );
+
+-- Backfill new column if migrating from older schema
+ALTER TABLE IF EXISTS venues
+  ADD COLUMN IF NOT EXISTS is_exclusive_by_time boolean NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_venues_single_day ON venues(is_single_booking_per_day);
 
@@ -124,6 +129,13 @@ INSERT INTO venues (name, is_single_booking_per_day) VALUES
   ('Progo 1', true),
   ('Progo 2', true)
 ON CONFLICT (name) DO NOTHING;
+
+-- Seed Spa Suite as exclusive-by-time venue
+INSERT INTO venues (name, is_single_booking_per_day, is_exclusive_by_time)
+VALUES ('Spa Suite', false, true)
+ON CONFLICT (name) DO UPDATE SET
+  is_exclusive_by_time = EXCLUDED.is_exclusive_by_time,
+  updated_at = now();
 
 -- Done.
 

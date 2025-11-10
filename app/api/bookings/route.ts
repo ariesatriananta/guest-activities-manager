@@ -67,14 +67,26 @@ export async function POST(req: Request) {
   } = body || {}
 
   // Conflict check for single-booking-per-day venues
-  const venues = await sql<{ is_single_booking_per_day: boolean; name: string }[]>`
-    SELECT is_single_booking_per_day, name FROM venues WHERE id = ${venueId} LIMIT 1
+  const venues = await sql<{ is_single_booking_per_day: boolean; is_exclusive_by_time: boolean; name: string }[]>`
+    SELECT is_single_booking_per_day, is_exclusive_by_time, name FROM venues WHERE id = ${venueId} LIMIT 1
   `
   const v = venues[0]
   if (v?.is_single_booking_per_day) {
     const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status <> 'cancelled' LIMIT 1`
     if (conflicts.length > 0) {
       return NextResponse.json({ error: `Venue ${v.name} already has a booking on ${date}` }, { status: 400 })
+    }
+  }
+  if (v?.is_exclusive_by_time) {
+    if (!endTime || typeof endTime !== 'string' || !endTime.trim()) {
+      return NextResponse.json({ error: `End time is required for venue ${v.name}` }, { status: 400 })
+    }
+    const overlaps = await sql`SELECT 1 FROM bookings
+      WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status <> 'cancelled'
+        AND NOT ( ${endTime}::time <= start_time OR ${startTime}::time >= COALESCE(end_time, start_time) )
+      LIMIT 1`
+    if (overlaps.length > 0) {
+      return NextResponse.json({ error: `Time slot overlaps with existing booking at ${v.name}` }, { status: 400 })
     }
   }
 

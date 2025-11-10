@@ -21,6 +21,7 @@ import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { CreateBookingDialog } from "@/components/features/bookings/create-booking-dialog"
 import { NavLayout } from "@/components/layout/nav-layout"
 import type { Booking } from "@/lib/types"
+import { VenueAvailabilitySheet } from "@/components/features/venues/availability-sheet"
 
 function CalendarContent() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
@@ -228,6 +229,7 @@ function CalendarContent() {
           >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           </Button>
+          <VenueAvailabilitySheet />
         </div>
       </div>
 

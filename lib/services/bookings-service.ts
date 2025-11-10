@@ -49,9 +49,9 @@ export const bookingsService = {
   checkVenueConflict: async (
     date: string,
     venueId: string,
-    excludeBookingId?: string,
+    opts?: { excludeBookingId?: string; startTime?: string; endTime?: string },
   ): Promise<{ hasConflict: boolean; venueName?: string; guestName?: string; activityName?: string }> => {
-    const res = await fetch(`/api/bookings/conflict`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, venueId, excludeBookingId }) })
+    const res = await fetch(`/api/bookings/conflict`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, venueId, excludeBookingId: opts?.excludeBookingId, startTime: opts?.startTime, endTime: opts?.endTime }) })
     if (!res.ok) throw new Error("Failed to check conflict")
     return res.json()
   },

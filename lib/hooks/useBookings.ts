@@ -47,8 +47,8 @@ export function useDeleteBooking() {
 
 export function useCheckVenueConflict() {
   return {
-    mutateAsync: async ({ date, venueId, excludeBookingId }: { date: string; venueId: string; excludeBookingId?: string }) => {
-      return bookingsService.checkVenueConflict(date, venueId, excludeBookingId)
+    mutateAsync: async ({ date, venueId, excludeBookingId, startTime, endTime }: { date: string; venueId: string; excludeBookingId?: string; startTime?: string; endTime?: string }) => {
+      return bookingsService.checkVenueConflict(date, venueId, { excludeBookingId, startTime, endTime })
     },
   }
 }

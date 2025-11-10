@@ -112,12 +112,16 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const handleFormSubmit = async (data: BookingFormData) => {
     setSubmitting(true)
     try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
-    // Check for venue conflict
-    if (selectedVenue?.isSingleBookingPerDay && selectedDate && selectedVenueId) {
+    // Check for venue conflict (per-day or exclusive-by-time)
+    const isExclusive = (selectedVenue as any)?.isExclusiveByTime === true
+    const isPerDay = selectedVenue?.isSingleBookingPerDay === true
+    if ((isPerDay || isExclusive) && selectedDate && selectedVenueId) {
       const conflict = await checkConflict.mutateAsync({
         date: selectedDate,
         venueId: selectedVenueId,
         excludeBookingId,
+        startTime: form.getValues("startTime"),
+        endTime: form.getValues("endTime"),
       })
 
       if (conflict?.hasConflict) {
@@ -284,12 +288,12 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                 name="endTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Time</FormLabel>
+                     <FormLabel>End Time{(selectedVenue as any)?.isExclusiveByTime ? ' *' : ''}</FormLabel>
                     <FormControl>
-                      {isMobile ? (
+                       {isMobile ? (
                         renderTimeSelect(field.value, (v) => field.onChange(v))
                       ) : (
-                        <Input type="time" {...field} />
+                        <Input type="time" {...field} required={(selectedVenue as any)?.isExclusiveByTime === true} />
                       )}
                     </FormControl>
                     <FormMessage />

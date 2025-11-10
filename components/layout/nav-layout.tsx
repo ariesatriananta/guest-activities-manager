@@ -76,7 +76,7 @@ export function NavLayout({ children }: NavLayoutProps) {
           <div className="flex items-center justify-between h-full">
             <div className="flex items-center h-full">
               <Link href="/" aria-label="Go to Dashboard" className="inline-flex items-center">
-                <Logo />
+                {/* <Logo /> */}
               </Link>
               <p className="text-sm text-muted-foreground max-sm:hidden ml-2">Guest Activities Manager</p>
             </div>

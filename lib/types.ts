@@ -18,6 +18,7 @@ export interface Venue {
   id: string
   name: string
   isSingleBookingPerDay: boolean
+  isExclusiveByTime?: boolean
   location?: string
   capacity?: number
 }
