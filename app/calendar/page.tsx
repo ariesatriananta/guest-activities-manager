@@ -20,6 +20,7 @@ import { CalendarFiltersSheet } from "@/components/features/calendar/filters-she
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { CreateBookingDialog } from "@/components/features/bookings/create-booking-dialog"
 import { NavLayout } from "@/components/layout/nav-layout"
+import { Badge } from "@/components/ui/badge"
 import type { Booking } from "@/lib/types"
 import { VenueAvailabilitySheet } from "@/components/features/venues/availability-sheet"
 
@@ -56,6 +57,15 @@ function CalendarContent() {
   const { data: venues, isLoading: loadingVenues, refetch: refetchVenues } = useVenues()
   const isLoadingAny = loadingBookings || loadingCategories || loadingActivities || loadingVenues
   const [refreshing, setRefreshing] = useState(false)
+
+  const statusStyles = {
+    confirmed: { badge: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300", stripe: "border-emerald-500" },
+    tentative: { badge: "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300", stripe: "border-amber-500" },
+    cancelled: { badge: "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300", stripe: "border-red-500" },
+  } as const
+
+  const getStatusBadgeClass = (status: Booking["status"]) => statusStyles[status].badge
+  const getStatusStripeClass = (status: Booking["status"]) => statusStyles[status].stripe
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -323,8 +333,11 @@ function CalendarContent() {
                   const activityName = b?.activityId && Array.isArray(activities)
                     ? (activities.find((a: any) => a.id === b.activityId)?.name || "")
                     : ""
+                  const status = (b?.status ?? "confirmed") as Booking["status"]
                   return (
-                    <div className="text-xs leading-tight min-w-0">
+                    <div
+                      className={`text-xs leading-tight min-w-0 -ml-2 border-l-4 pl-2 pr-1 ${getStatusStripeClass(status)}`}
+                    >
                       <div className="font-medium inline-flex items-center gap-1 min-w-0">
                         <User className="h-3.5 w-3.5 opacity-70" />
                         <span className="truncate">{guest}</span>
@@ -344,6 +357,11 @@ function CalendarContent() {
                           <span className="truncate">{venueName}</span>
                         </div>
                       ) : null}
+                      <div className="mt-1">
+                        <Badge variant="default" className={getStatusBadgeClass(status)}>
+                          {status}
+                        </Badge>
+                      </div>
                     </div>
                   )
                 }

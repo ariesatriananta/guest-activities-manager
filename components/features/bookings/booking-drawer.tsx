@@ -48,14 +48,16 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
     return `${day}, ${datePart}, ${timePart} (WIB)`
   }
 
-  const getStatusColor = (status: BookingStatus) => {
+  const getStatusBadgeClass = (status: BookingStatus) => {
     switch (status) {
       case "confirmed":
-        return "default"
+        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300"
       case "tentative":
-        return "secondary"
+        return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
       case "cancelled":
-        return "destructive"
+        return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
+      default:
+        return ""
     }
   }
 
@@ -126,7 +128,7 @@ END:VCALENDAR`
           <SheetDescription className="text-xs sm:text-sm">View and manage this booking</SheetDescription>
           <div className="mt-1 flex items-center justify-between gap-3">
             <h3 className="text-sm sm:text-base font-semibold truncate">{activity?.name}</h3>
-            <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+            <Badge variant="outline" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
           </div>
         </SheetHeader>
 
