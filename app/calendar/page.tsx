@@ -124,6 +124,27 @@ function CalendarContent() {
     })
   }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, activities, venues, search])
 
+  // Patch: on mobile listWeek, force day header colspan to 2 (time + content)
+  useEffect(() => {
+    if (!isMobile || viewType !== "listWeek") return
+    const patch = () => {
+      try {
+        const nodes = document.querySelectorAll(
+          ".calendar-container .fc .fc-list-table .fc-list-day [colspan]",
+        )
+        nodes.forEach((el) => {
+          const anyEl = el as HTMLElement
+          if (anyEl.getAttribute("colspan") !== "2") {
+            anyEl.setAttribute("colspan", "2")
+          }
+        })
+      } catch {}
+    }
+    // run after FullCalendar renders
+    const id = setTimeout(patch, 0)
+    return () => clearTimeout(id)
+  }, [isMobile, viewType, filteredBookings])
+
   const activeFilterCount = useMemo(() => {
     let n = 0
     if (search.trim()) n++

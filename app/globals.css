@@ -283,4 +283,39 @@
   .calendar-container .fc .fc-daygrid-day-number {
     font-size: 0.75rem;
   }
+
+
+  .calendar-container .fc .fc-list-table { table-layout: fixed; width:100%; }
+  :root {
+    --fc-time-col: 120px;        /* samain dgn yg kamu pakai */
+  }
+  .calendar-container .fc .fc-list-event-time,
+  .calendar-container .fc .fc-list-table col.fc-list-event-time-col {
+    width: var(--fc-time-col) !important;
+    max-width: var(--fc-time-col) !important;
+  }
+
+  /* lenyapkan kolom dot total */
+  .calendar-container .fc .fc-list-event-graphic,
+  .calendar-container .fc .fc-list-table col.fc-list-event-graphic-col,
+  .calendar-container .fc .fc-list-event-dot {
+    display:none !important; width:0 !important; visibility:collapse !important;
+  }
+
+  /* ini kuncinya: kolom detail ambil sisa width */
+  .calendar-container .fc td.fc-list-event-title,
+  .calendar-container .fc td.fc-list-event-main {
+    width: calc(100% - var(--fc-time-col)) !important;
+    max-width: none !important;
+    padding-left: 8px !important;
+  }
+  .calendar-container .fc .fc-list-table col.fc-list-event-title-col {
+    width: auto !important;    /* jangan ada width statis di colgroup */
+  }
+
+
+
+
+  
 }
+
