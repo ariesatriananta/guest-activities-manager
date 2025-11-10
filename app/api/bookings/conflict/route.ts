@@ -22,8 +22,8 @@ export async function POST(req: Request) {
       LIMIT 1
     `
     if (conflicts.length > 0) {
-      const detail = await sql<{ guest_name: string; activity_name: string }[]>`
-        SELECT b.guest_name, a.name as activity_name
+      const detail = await sql<{ guest_name: string; activity_name: string; status: string }[]>`
+        SELECT b.guest_name, a.name as activity_name, b.status
         FROM bookings b
         JOIN activities a ON a.id = b.activity_id
         WHERE b.id = ${conflicts[0].id}
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         venueName: v.name,
         guestName: detail[0]?.guest_name,
         activityName: detail[0]?.activity_name,
+        status: detail[0]?.status,
       })
     }
     return NextResponse.json({ hasConflict: false })
@@ -50,8 +51,8 @@ export async function POST(req: Request) {
       LIMIT 1
     `
     if (overlaps.length > 0) {
-      const detail = await sql<{ guest_name: string; activity_name: string }[]>`
-        SELECT b.guest_name, a.name as activity_name
+    const detail = await sql<{ guest_name: string; activity_name: string; status: string }[]>`
+        SELECT b.guest_name, a.name as activity_name, b.status
         FROM bookings b
         JOIN activities a ON a.id = b.activity_id
         WHERE b.id = ${overlaps[0].id}
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
         venueName: v.name,
         guestName: detail[0]?.guest_name,
         activityName: detail[0]?.activity_name,
+        status: detail[0]?.status,
       })
     }
   }

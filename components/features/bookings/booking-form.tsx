@@ -58,6 +58,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [conflictDate, setConflictDate] = useState("")
   const [conflictGuest, setConflictGuest] = useState("")
   const [conflictActivity, setConflictActivity] = useState("")
+  const [conflictStatus, setConflictStatus] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -129,6 +130,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
         setConflictDate(selectedDate)
         setConflictGuest(conflict.guestName || "")
         setConflictActivity(conflict.activityName || "")
+        setConflictStatus((conflict as any)?.status || "")
         setShowConflictDialog(true)
         setSubmitting(false)
         try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
@@ -159,10 +161,11 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
     const hh = (hRaw ?? '00').padStart(2, '0')
     const mm = (mRaw ?? '00').padStart(2, '0')
     const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-    const minuteOptions = ['00', '15', '30', '45']
+    const minuteOptions = ['00', '30']
+    const mmNumeric = Number.isFinite(parseInt(mm || '0', 10)) ? (parseInt(mm || '0', 10) % 60) : 0
     const mmSel = minuteOptions.includes(mm)
       ? mm
-      : minuteOptions[Math.floor((parseInt(mm || '0', 10) % 60) / 15)]
+      : minuteOptions[Math.floor(mmNumeric / 30)]
     return (
       <div className="flex items-center gap-2">
         <Select value={hh} onValueChange={(h) => onChange(`${h}:${mm}`)}>
@@ -522,7 +525,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               {" "}
               {conflictGuest && conflictActivity ? (
                 <>
-                  By <strong>{conflictGuest}</strong> do <strong>{conflictActivity}</strong>.
+                  By <strong>{conflictGuest}</strong> do <strong>{conflictActivity}</strong>
+                  {conflictStatus ? (
+                    <> (<strong>{conflictStatus}</strong>)</>
+                  ) : null}.
                 </>
               ) : null}
               {" "}This venue only allows one booking per day. Please select a different venue or date.

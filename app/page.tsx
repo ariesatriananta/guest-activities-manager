@@ -356,13 +356,13 @@ export default function DashboardPage() {
                           <h4 className="font-semibold truncate sm:whitespace-normal flex-1 min-w-0">{activity?.name}</h4>
                           <div className="ml-auto sm:hidden">
                             <Button variant="outline" size="sm" className="shrink-0" asChild disabled={navigatingId === booking.id}>
-                              <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
+                              {/* <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); goTo(booking.id) }}>
                                 {navigatingId === booking.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <>Edit</>
                                 )}
-                              </Link>
+                              </Link> */}
                             </Button>
                           </div>
                         </div>
