@@ -79,11 +79,14 @@ export function CalendarFiltersSheet({ open, onOpenChange, values, onApply, venu
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All venues</SelectItem>
-                {venues?.map((venue) => (
-                  <SelectItem key={venue.id} value={venue.id}>
-                    {venue.name}
-                  </SelectItem>
-                ))}
+                {(venues || [])
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                  .map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -96,11 +99,14 @@ export function CalendarFiltersSheet({ open, onOpenChange, values, onApply, venu
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                {(categories || [])
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                  .map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -128,4 +134,3 @@ export function CalendarFiltersSheet({ open, onOpenChange, values, onApply, venu
     </Sheet>
   )
 }
-

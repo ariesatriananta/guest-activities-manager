@@ -73,7 +73,10 @@ export function VenueAvailabilitySheet({ onPickSlot, initialVenueId, initialDate
                   <SelectValue placeholder="Select venue" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(venues || []).map((v) => (
+                  {(venues || [])
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                    .map((v) => (
                     <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                   ))}
                 </SelectContent>

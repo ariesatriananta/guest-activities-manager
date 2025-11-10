@@ -39,6 +39,19 @@ function BookingsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const getStatusBadgeClass = (status: BookingStatus) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300"
+      case "tentative":
+        return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
+      case "cancelled":
+        return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
+      default:
+        return ""
+    }
+  }
+
   const goTo = (id: string) => {
     setNavigatingId(id)
     router.push(`/bookings/${id}`)
@@ -194,17 +207,6 @@ function BookingsContent() {
     try { await mutate() } finally { setRefreshing(false); try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }
   }
 
-  const getStatusColor = (status: BookingStatus) => {
-    switch (status) {
-      case "confirmed":
-        return "default"
-      case "tentative":
-        return "secondary"
-      case "cancelled":
-        return "destructive"
-    }
-  }
-
   const formatDateDDMMYYYY = (iso: string) => {
     const parts = iso.split("-")
     if (parts.length !== 3) return iso
@@ -295,7 +297,7 @@ function BookingsContent() {
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{formatDateDDMMYYYY(booking.date)} </div>
                       <div className="flex flex-col items-end gap-0.5">
-                        <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                        <Badge variant="default" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
                         {navigatingId === booking.id ? (
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : (
@@ -384,7 +386,7 @@ function BookingsContent() {
                         <TableCell>{activity?.name}</TableCell>
                         <TableCell>{venue?.name}</TableCell>
                         <TableCell>
-                          <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                          <Badge variant="default" className={getStatusBadgeClass(booking.status)}>{booking.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-1">

@@ -56,7 +56,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     `
     const v = venues[0]
     if (v?.is_single_booking_per_day) {
-      const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status <> 'cancelled' AND id <> ${id} LIMIT 1`
+      const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status = 'confirmed' AND id <> ${id} LIMIT 1`
       if (conflicts.length > 0) {
         return NextResponse.json({ error: `Venue ${v.name} already has a booking on ${date}` }, { status: 400 })
       }
@@ -68,7 +68,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       const newEnd = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
       if (newEnd) {
         const overlaps = await sql`SELECT 1 FROM bookings
-          WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status <> 'cancelled' AND id <> ${id}
+          WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status = 'confirmed' AND id <> ${id}
             AND NOT ( ${newEnd}::time <= start_time OR ${startTime ?? null}::time >= COALESCE(end_time, start_time) )
           LIMIT 1`
         if (overlaps.length > 0) {

@@ -127,16 +127,20 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
       })
 
       if (conflict?.hasConflict) {
-        setConflictVenueName(selectedVenue.name)
-        setConflictDate(selectedDate)
-        setConflictGuest(conflict.guestName || "")
-        setConflictActivity(conflict.activityName || "")
-        setConflictStatus((conflict as any)?.status || "")
-        setConflictPolicy((conflict as any)?.policy || "")
-        setShowConflictDialog(true)
-        setSubmitting(false)
-        try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
-        return
+        const conflictStatusVal = (conflict as any)?.status || ""
+        // Abaikan konflik bila status existing booking masih tentative
+        if (conflictStatusVal !== 'tentative') {
+          setConflictVenueName(selectedVenue.name)
+          setConflictDate(selectedDate)
+          setConflictGuest(conflict.guestName || "")
+          setConflictActivity(conflict.activityName || "")
+          setConflictStatus(conflictStatusVal)
+          setConflictPolicy((conflict as any)?.policy || "")
+          setShowConflictDialog(true)
+          setSubmitting(false)
+          try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+          return
+        }
       }
     }
 
@@ -322,7 +326,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories?.map((category) => (
+                        {(categories || [])
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                          .map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>
@@ -347,7 +354,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {activities?.map((activity) => (
+                          {(activities || [])
+                            .slice()
+                            .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                            .map((activity) => (
                             <SelectItem key={activity.id} value={activity.id}>
                               {activity.name}
                             </SelectItem>
@@ -376,7 +386,10 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {venues?.map((venue) => (
+                      {(venues || [])
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                        .map((venue) => (
                         <SelectItem key={venue.id} value={venue.id}>
                           {venue.name}
                         </SelectItem>
@@ -386,6 +399,11 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                   {selectedVenue?.isSingleBookingPerDay && (
                     <Badge variant="secondary" className="mt-1">
                       Single-day booking only
+                    </Badge>
+                  )}
+                  {selectedVenue?.isExclusiveByTime && (
+                    <Badge variant="secondary" className="mt-1">
+                      Exclusive by time
                     </Badge>
                   )}
                   <FormMessage />
@@ -529,7 +547,9 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                 <>
                   By <strong>{conflictGuest}</strong> do <strong>{conflictActivity}</strong>
                   {conflictStatus ? (
-                    <> (<strong>{conflictStatus}</strong>)</>
+                    <> 
+                      <Badge variant="outline" className={`${getStatusStyle(conflictStatus)} text-[10px] px-2 py-0.5 ml-1`}>{conflictStatus}</Badge>
+                    </>
                   ) : null}.
                 </>
               ) : null}

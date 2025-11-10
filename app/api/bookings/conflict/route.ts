@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       SELECT id FROM bookings
       WHERE date = ${date}::date
         AND venue_id = ${venueId}::uuid
-        AND status <> 'cancelled'
+        AND status = 'confirmed'
         AND ((${excludeBookingId ?? null}::uuid) IS NULL OR id <> ${excludeBookingId ?? null}::uuid)
       ORDER BY created_at ASC
       LIMIT 1
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       SELECT id FROM bookings
       WHERE date = ${date}::date
         AND venue_id = ${venueId}::uuid
-        AND status <> 'cancelled'
+        AND status = 'confirmed'
         AND ((${excludeBookingId ?? null}::uuid) IS NULL OR id <> ${excludeBookingId ?? null}::uuid)
         AND NOT ( ${endTime}::time <= start_time OR ${startTime}::time >= COALESCE(end_time, start_time) )
       ORDER BY created_at ASC
