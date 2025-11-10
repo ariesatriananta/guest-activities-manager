@@ -29,6 +29,9 @@ function CalendarContent() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [sheetVenueId, setSheetVenueId] = useState<string | null>(null)
+  const [sheetStart, setSheetStart] = useState<string | null>(null)
+  const [sheetEnd, setSheetEnd] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [viewType, setViewType] = useState<string>("dayGridMonth")
 
@@ -229,7 +232,15 @@ function CalendarContent() {
           >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           </Button>
-          <VenueAvailabilitySheet />
+          <VenueAvailabilitySheet
+            onPickSlot={({ venueId, date, start, end }) => {
+              setSheetVenueId(venueId)
+              setSheetStart(start)
+              setSheetEnd(end)
+              setSelectedDate(new Date(`${date}T00:00:00+07:00`))
+              setCreateDialogOpen(true)
+            }}
+          />
         </div>
       </div>
 
@@ -378,9 +389,17 @@ function CalendarContent() {
 
       <CreateBookingDialog
         open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        onOpenChange={(o) => {
+          setCreateDialogOpen(o)
+          if (!o) {
+            setSheetVenueId(null); setSheetStart(null); setSheetEnd(null); setSelectedTime(null)
+          }
+        }}
         defaultDate={selectedDate}
         defaultTime={selectedTime}
+        defaultStartTime={sheetStart}
+        defaultEndTime={sheetEnd}
+        defaultVenueId={sheetVenueId}
       />
     </div>
   )

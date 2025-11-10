@@ -18,11 +18,11 @@ type Availability = {
   freeSlots: { start: string; end: string }[]
 }
 
-export function VenueAvailabilitySheet() {
+export function VenueAvailabilitySheet({ onPickSlot, initialVenueId, initialDate }: { onPickSlot?: (p: { venueId: string; date: string; start: string; end: string }) => void; initialVenueId?: string; initialDate?: string }) {
   const [open, setOpen] = React.useState(false)
   const { data: venues, isLoading } = useVenues()
-  const [venueId, setVenueId] = React.useState<string>("")
-  const [date, setDate] = React.useState<string>("")
+  const [venueId, setVenueId] = React.useState<string>(initialVenueId || "")
+  const [date, setDate] = React.useState<string>(initialDate || "")
   const [loading, setLoading] = React.useState(false)
   const [data, setData] = React.useState<Availability | null>(null)
 
@@ -125,9 +125,18 @@ export function VenueAvailabilitySheet() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {data.freeSlots.map((f, i) => (
-                      <span key={i} className="text-xs px-2 py-1 rounded border bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          if (onPickSlot) onPickSlot({ venueId, date, start: f.start, end: f.end })
+                          setOpen(false)
+                        }}
+                        className="text-xs px-2 py-1 rounded border bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1 hover:bg-emerald-500/15"
+                        aria-label={`Pick ${f.start}-${f.end}`}
+                      >
                         <Check className="h-3 w-3" /> {f.start}–{f.end}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -139,4 +148,3 @@ export function VenueAvailabilitySheet() {
     </Sheet>
   )
 }
-

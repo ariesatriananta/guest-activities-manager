@@ -12,9 +12,12 @@ interface CreateBookingDialogProps {
   onOpenChange: (open: boolean) => void
   defaultDate?: Date | null
   defaultTime?: string | null
+  defaultStartTime?: string | null
+  defaultEndTime?: string | null
+  defaultVenueId?: string | null
 }
 
-export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTime }: CreateBookingDialogProps) {
+export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTime, defaultStartTime, defaultEndTime, defaultVenueId }: CreateBookingDialogProps) {
   const router = useRouter()
   const createBooking = useCreateBooking()
 
@@ -42,11 +45,11 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
 
   const defaultValues = {
     date: defaultDate ? formatDateISOInTZ(defaultDate, JAKARTA_TZ) : todayISOInJakarta(),
-    startTime: defaultTime || "",
-    endTime: "",
+    startTime: defaultStartTime || defaultTime || "",
+    endTime: defaultEndTime || "",
     categoryId: "",
     activityId: "",
-    venueId: "",
+    venueId: defaultVenueId || "",
     guestName: "",
     suiteNumber: "",
     pax: 1,
