@@ -34,9 +34,16 @@ export async function GET(req: Request) {
            b.driver_name as "driverName",
            b.remark,
            b.status,
-           b.created_at as "createdAt"
+           b.created_at as "createdAt",
+           b.updated_at as "updatedAt",
+           b.created_by as "createdById",
+           b.updated_by as "updatedById",
+           creator.name as "createdByName",
+           updater.name as "updatedByName"
     FROM bookings b
     LEFT JOIN activities a ON a.id = b.activity_id
+    LEFT JOIN profiles creator ON creator.id = b.created_by
+    LEFT JOIN profiles updater ON updater.id = b.updated_by
     WHERE (${dateFrom}::date IS NULL OR b.date >= ${dateFrom})
       AND (${dateTo}::date IS NULL OR b.date <= ${dateTo})
       AND (${venueId}::uuid IS NULL OR b.venue_id = ${venueId})
@@ -50,6 +57,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const userId = (session.user as any)?.id ?? null
   const body = await req.json()
   const {
     date,
@@ -92,25 +100,36 @@ export async function POST(req: Request) {
 
   const endTimeParam = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
   const rows = await sql<any[]>`
-    INSERT INTO bookings (
-      date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status
-    ) VALUES (
-      ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${remark || null}, ${status}
+    WITH inserted AS (
+      INSERT INTO bookings (
+        date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status, created_by, updated_by
+      ) VALUES (
+        ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${remark || null}, ${status}, ${userId}, ${userId}
+      )
+      RETURNING *
     )
-    RETURNING id,
-      to_char(date, 'YYYY-MM-DD') as date,
-      to_char(start_time, 'HH24:MI') as "startTime",
-      to_char(end_time, 'HH24:MI') as "endTime",
-      activity_id as "activityId",
-      venue_id as "venueId",
-      guest_name as "guestName",
-      suite_number as "suiteNumber",
-      pax,
-      ga_name as "gaName",
-      driver_name as "driverName",
-      remark,
-      status,
-      created_at as "createdAt"
+    SELECT inserted.id,
+      to_char(inserted.date, 'YYYY-MM-DD') as date,
+      to_char(inserted.start_time, 'HH24:MI') as "startTime",
+      to_char(inserted.end_time, 'HH24:MI') as "endTime",
+      inserted.activity_id as "activityId",
+      inserted.venue_id as "venueId",
+      inserted.guest_name as "guestName",
+      inserted.suite_number as "suiteNumber",
+      inserted.pax,
+      inserted.ga_name as "gaName",
+      inserted.driver_name as "driverName",
+      inserted.remark,
+      inserted.status,
+      inserted.created_at as "createdAt",
+      inserted.updated_at as "updatedAt",
+      inserted.created_by as "createdById",
+      inserted.updated_by as "updatedById",
+      creator.name as "createdByName",
+      updater.name as "updatedByName"
+    FROM inserted
+    LEFT JOIN profiles creator ON creator.id = inserted.created_by
+    LEFT JOIN profiles updater ON updater.id = inserted.updated_by
   `
   return NextResponse.json(rows[0], { status: 201 })
 }

@@ -19,7 +19,7 @@ export const bookingsService = {
     return (await res.json()) || undefined
   },
 
-  create: async (data: Omit<Booking, "id" | "createdAt">): Promise<Booking> => {
+  create: async (data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName">): Promise<Booking> => {
     const res = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
     if (!res.ok) {
       const j = await res.json().catch(() => null)

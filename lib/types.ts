@@ -40,6 +40,11 @@ export interface Booking {
   remark: string
   status: BookingStatus
   createdAt: string
+  updatedAt?: string
+  createdById?: string | null
+  updatedById?: string | null
+  createdByName?: string | null
+  updatedByName?: string | null
 }
 
 export interface BookingFormData {

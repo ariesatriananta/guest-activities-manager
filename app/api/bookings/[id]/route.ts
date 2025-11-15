@@ -8,22 +8,29 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
   const rows = await sql<any[]>`
-    SELECT id,
-           to_char(date, 'YYYY-MM-DD') as date,
-           to_char(start_time, 'HH24:MI') as "startTime",
-           to_char(end_time, 'HH24:MI') as "endTime",
-           activity_id as "activityId",
-           venue_id as "venueId",
-           guest_name as "guestName",
-           suite_number as "suiteNumber",
-           pax,
-           ga_name as "gaName",
-           driver_name as "driverName",
-           remark,
-           status,
-           created_at as "createdAt"
-    FROM bookings
-    WHERE id = ${id}
+    SELECT b.id,
+           to_char(b.date, 'YYYY-MM-DD') as date,
+           to_char(b.start_time, 'HH24:MI') as "startTime",
+           to_char(b.end_time, 'HH24:MI') as "endTime",
+           b.activity_id as "activityId",
+           b.venue_id as "venueId",
+           b.guest_name as "guestName",
+           b.suite_number as "suiteNumber",
+           b.pax,
+           b.ga_name as "gaName",
+           b.driver_name as "driverName",
+           b.remark,
+           b.status,
+           b.created_at as "createdAt",
+           b.updated_at as "updatedAt",
+           b.created_by as "createdById",
+           b.updated_by as "updatedById",
+           creator.name as "createdByName",
+           updater.name as "updatedByName"
+    FROM bookings b
+    LEFT JOIN profiles creator ON creator.id = b.created_by
+    LEFT JOIN profiles updater ON updater.id = b.updated_by
+    WHERE b.id = ${id}
     LIMIT 1
   `
   return NextResponse.json(rows[0] || null)
@@ -33,6 +40,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
+  const userId = (session.user as any)?.id ?? null
   const body = await req.json()
   const {
     date,
@@ -80,36 +88,48 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const endTimeParam = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
   const rows = await sql<any[]>`
-    UPDATE bookings
-    SET
-      date = COALESCE(${date ?? null}::date, date),
-      start_time = COALESCE(${startTime ?? null}::time, start_time),
-      end_time = COALESCE(${endTimeParam}::time, end_time),
-      activity_id = COALESCE(${activityId ?? null}::uuid, activity_id),
-      venue_id = COALESCE(${venueId ?? null}::uuid, venue_id),
-      guest_name = COALESCE(${guestName ?? null}, guest_name),
-      suite_number = COALESCE(${suiteNumber ?? null}, suite_number),
-      pax = COALESCE(${pax ?? null}::int, pax),
-      ga_name = COALESCE(${gaName ?? null}, ga_name),
-      driver_name = COALESCE(${driverName ?? null}, driver_name),
-      remark = COALESCE(${remark ?? null}, remark),
-      status = COALESCE(${status ?? null}, status),
-      updated_at = now()
-    WHERE id = ${id}
-    RETURNING id,
-      to_char(date, 'YYYY-MM-DD') as date,
-      to_char(start_time, 'HH24:MI') as "startTime",
-      to_char(end_time, 'HH24:MI') as "endTime",
-      activity_id as "activityId",
-      venue_id as "venueId",
-      guest_name as "guestName",
-      suite_number as "suiteNumber",
-      pax,
-      ga_name as "gaName",
-      driver_name as "driverName",
-      remark,
-      status,
-      created_at as "createdAt"
+    WITH updated AS (
+      UPDATE bookings
+      SET
+        date = COALESCE(${date ?? null}::date, date),
+        start_time = COALESCE(${startTime ?? null}::time, start_time),
+        end_time = COALESCE(${endTimeParam}::time, end_time),
+        activity_id = COALESCE(${activityId ?? null}::uuid, activity_id),
+        venue_id = COALESCE(${venueId ?? null}::uuid, venue_id),
+        guest_name = COALESCE(${guestName ?? null}, guest_name),
+        suite_number = COALESCE(${suiteNumber ?? null}, suite_number),
+        pax = COALESCE(${pax ?? null}::int, pax),
+        ga_name = COALESCE(${gaName ?? null}, ga_name),
+        driver_name = COALESCE(${driverName ?? null}, driver_name),
+        remark = COALESCE(${remark ?? null}, remark),
+        status = COALESCE(${status ?? null}, status),
+        updated_at = now(),
+        updated_by = ${userId}
+      WHERE id = ${id}
+      RETURNING *
+    )
+    SELECT updated.id,
+      to_char(updated.date, 'YYYY-MM-DD') as date,
+      to_char(updated.start_time, 'HH24:MI') as "startTime",
+      to_char(updated.end_time, 'HH24:MI') as "endTime",
+      updated.activity_id as "activityId",
+      updated.venue_id as "venueId",
+      updated.guest_name as "guestName",
+      updated.suite_number as "suiteNumber",
+      updated.pax,
+      updated.ga_name as "gaName",
+      updated.driver_name as "driverName",
+      updated.remark,
+      updated.status,
+      updated.created_at as "createdAt",
+      updated.updated_at as "updatedAt",
+      updated.created_by as "createdById",
+      updated.updated_by as "updatedById",
+      creator.name as "createdByName",
+      updater.name as "updatedByName"
+    FROM updated
+    LEFT JOIN profiles creator ON creator.id = updated.created_by
+    LEFT JOIN profiles updater ON updater.id = updated.updated_by
   `
   return NextResponse.json(rows[0])
 }

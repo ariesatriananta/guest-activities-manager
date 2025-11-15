@@ -27,6 +27,7 @@ function BookingsContent() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [creatorFilter, setCreatorFilter] = useState<string>("all")
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
@@ -75,6 +76,7 @@ function BookingsContent() {
       if (dateTo && booking.date > dateTo) return false
       if (venueFilter !== "all" && booking.venueId !== venueFilter) return false
       if (statusFilter !== "all" && booking.status !== statusFilter) return false
+      if (creatorFilter !== "all" && booking.createdById !== creatorFilter) return false
 
       if (categoryFilter !== "all") {
         const catId = activityToCategory.get(booking.activityId)
@@ -89,7 +91,20 @@ function BookingsContent() {
 
       return true
     })
-  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, venues, search, activities])
+  }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter, venues, search, activities])
+
+  const creatorOptions = useMemo(() => {
+    if (!bookings) return []
+    const map = new Map<string, string>()
+    bookings.forEach((b) => {
+      if (b.createdById && b.createdByName) {
+        map.set(b.createdById, b.createdByName)
+      }
+    })
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+  }, [bookings])
 
   const visibleBookings = useMemo(() => {
     return (filteredBookings || []).slice(0, visibleCount)
@@ -104,8 +119,9 @@ function BookingsContent() {
     if (venueFilter !== "all") n++
     if (categoryFilter !== "all") n++
     if (statusFilter !== "all") n++
+    if (creatorFilter !== "all") n++
     return n
-  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter])
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter])
 
   // Load filters from URL once on mount
   useEffect(() => {
@@ -115,12 +131,14 @@ function BookingsContent() {
     const venue = searchParams.get("venue") || "all"
     const cat = searchParams.get("cat") || "all"
     const status = (searchParams.get("status") as BookingStatus | null) || null
+    const creator = searchParams.get("creator") || "all"
     if (q) setSearch(q)
     if (from) setDateFrom(from)
     if (to) setDateTo(to)
     if (venue) setVenueFilter(venue)
     if (cat) setCategoryFilter(cat)
     if (status) setStatusFilter(status)
+    if (creator) setCreatorFilter(creator)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -133,11 +151,12 @@ function BookingsContent() {
     if (venueFilter !== "all") params.set("venue", venueFilter)
     if (categoryFilter !== "all") params.set("cat", categoryFilter)
     if (statusFilter !== "all") params.set("status", statusFilter)
+    if (creatorFilter !== "all") params.set("creator", creatorFilter)
     const qs = params.toString()
     const url = qs ? `?${qs}` : ""
     router.replace(`/bookings${url}`, { scroll: false })
     setVisibleCount(20)
-  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, router])
+  }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter, router])
 
   const exportToXLS = () => {
     if (!filteredBookings || !venues) return
@@ -242,17 +261,33 @@ function BookingsContent() {
         <FiltersSheet
           open={filtersOpen}
           onOpenChange={(o) => setFiltersOpen(o)}
-          values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter, status: statusFilter }}
-          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || ""); setVenueFilter(v.venueId); setCategoryFilter(v.categoryId); setStatusFilter(v.status); }}
+          values={{ dateFrom, dateTo, venueId: venueFilter, categoryId: categoryFilter, status: statusFilter, creatorId: creatorFilter }}
+          onApply={(v) => {
+            setDateFrom(v.dateFrom || "")
+            setDateTo(v.dateTo || "")
+            setVenueFilter(v.venueId)
+            setCategoryFilter(v.categoryId)
+            setStatusFilter(v.status)
+            setCreatorFilter(v.creatorId)
+          }}
           venues={venues || []}
           categories={categories || []}
+          creators={creatorOptions}
           activeCount={activeFilterCount}
         />
         <Button
           size="icon-sm"
           variant="ghost"
           aria-label="Clear Quick Filters"
-          onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); setVenueFilter("all"); setCategoryFilter("all"); setStatusFilter("all") }}
+          onClick={() => {
+            setSearch("")
+            setDateFrom("")
+            setDateTo("")
+            setVenueFilter("all")
+            setCategoryFilter("all")
+            setStatusFilter("all")
+            setCreatorFilter("all")
+          }}
         >
           <FilterX className="h-4 w-4" />
         </Button>

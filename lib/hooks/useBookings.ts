@@ -14,7 +14,7 @@ export function useCreateBooking() {
   const { mutate } = useSWR<Booking[]>("bookings")
 
   return {
-    mutateAsync: async (data: Omit<Booking, "id" | "createdAt" | "updatedAt">) => {
+    mutateAsync: async (data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName">) => {
       const newBooking = await bookingsService.create(data)
       mutate()
       return newBooking

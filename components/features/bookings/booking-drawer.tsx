@@ -45,7 +45,7 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
     const day = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "Asia/Jakarta" }).format(dt)
     const datePart = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Jakarta" }).format(dt)
     const timePart = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).format(dt)
-    return `${day}, ${datePart}, ${timePart} (WIB)`
+    return `${day}, ${datePart}, ${timePart} `
   }
 
   const getStatusBadgeClass = (status: BookingStatus) => {
@@ -186,9 +186,17 @@ END:VCALENDAR`
                 <p className="font-medium">{booking.remark}</p>
               </div>
             )}
-            <div>
-              <p className="text-sm text-muted-foreground">Created</p>
-              <p className="font-medium">{formatDateTimeWithDayJakarta(booking.createdAt)}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Created</p>
+                <p className="font-medium">{formatDateTimeWithDayJakarta(booking.createdAt)}</p>
+                <p className="text-xs text-muted-foreground">by {booking.createdByName || "System"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Last Updated</p>
+                <p className="font-medium">{formatDateTimeWithDayJakarta(booking.updatedAt || booking.createdAt)}</p>
+                <p className="text-xs text-muted-foreground">by {booking.updatedByName || booking.createdByName || "System"}</p>
+              </div>
             </div>
           </div>
 

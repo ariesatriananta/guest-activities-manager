@@ -15,6 +15,7 @@ export interface FiltersValues {
   venueId: string
   categoryId: string
   status: BookingStatus | "all"
+  creatorId: string
 }
 
 interface FiltersSheetProps {
@@ -24,10 +25,11 @@ interface FiltersSheetProps {
   onApply: (v: FiltersValues) => void
   venues: Venue[]
   categories: Category[]
+  creators: { id: string; name: string }[]
   activeCount: number
 }
 
-export function FiltersSheet({ open, onOpenChange, values, onApply, venues, categories, activeCount }: FiltersSheetProps) {
+export function FiltersSheet({ open, onOpenChange, values, onApply, venues, categories, creators, activeCount }: FiltersSheetProps) {
   const [draft, setDraft] = React.useState<FiltersValues>(values)
   React.useEffect(() => {
     if (open) setDraft(values)
@@ -127,13 +129,33 @@ export function FiltersSheet({ open, onOpenChange, values, onApply, venues, cate
               </SelectContent>
             </Select>
           </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Creator</label>
+            <Select value={draft.creatorId} onValueChange={(v) => setDraft((d) => ({ ...d, creatorId: v }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All creators" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All creators</SelectItem>
+                {(creators || [])
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                  .map((creator) => (
+                    <SelectItem key={creator.id} value={creator.id}>
+                      {creator.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex justify-between items-center mt-4">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDraft({ dateFrom: "", dateTo: "", venueId: "all", categoryId: "all", status: "all" })}
+            onClick={() => setDraft({ dateFrom: "", dateTo: "", venueId: "all", categoryId: "all", status: "all", creatorId: "all" })}
           >
             <FilterX className="h-4 w-4 mr-2" /> Clear
           </Button>

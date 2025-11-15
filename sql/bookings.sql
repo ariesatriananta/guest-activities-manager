@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   remark       text,
   status       text NOT NULL CHECK (status IN ('tentative','confirmed','cancelled')),
   created_at   timestamptz NOT NULL DEFAULT now(),
-  updated_at   timestamptz NOT NULL DEFAULT now()
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  created_by   uuid REFERENCES profiles(id),
+  updated_by   uuid REFERENCES profiles(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(date);
@@ -44,6 +46,12 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 -- Ensure end_time nullable if table already existed
 ALTER TABLE IF EXISTS bookings
   ALTER COLUMN end_time DROP NOT NULL;
+
+ALTER TABLE IF EXISTS bookings
+  ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id);
+
+ALTER TABLE IF EXISTS bookings
+  ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES profiles(id);
 
 -- Seed sample bookings (from mockDB) using Jakarta local date
 -- Avoid duplicates using WHERE NOT EXISTS guards
