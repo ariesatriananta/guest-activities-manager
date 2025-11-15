@@ -23,7 +23,7 @@ export interface Venue {
   capacity?: number
 }
 
-export type BookingStatus = "tentative" | "confirmed" | "cancelled"
+export type BookingStatus = "tentative" | "confirmed" | "cancelled" | "done"
 
 export interface Booking {
   id: string

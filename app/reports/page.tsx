@@ -145,15 +145,16 @@ function ReportsContent() {
   const monthlyTrend = useMemo(() => {
     if (!bookings) return []
 
-    const monthMap = new Map<string, { confirmed: number; tentative: number; cancelled: number }>()
+    const monthMap = new Map<string, { confirmed: number; tentative: number; cancelled: number; done: number }>()
 
     bookings.forEach((booking) => {
       const month = booking.date.slice(0, 7)
-      const current = monthMap.get(month) || { confirmed: 0, tentative: 0, cancelled: 0 }
+      const current = monthMap.get(month) || { confirmed: 0, tentative: 0, cancelled: 0, done: 0 }
 
       if (booking.status === "confirmed") current.confirmed++
       else if (booking.status === "tentative") current.tentative++
       else if (booking.status === "cancelled") current.cancelled++
+      else if (booking.status === "done") current.done++
 
       monthMap.set(month, current)
     })
@@ -164,6 +165,7 @@ function ReportsContent() {
         confirmed: data.confirmed,
         tentative: data.tentative,
         cancelled: data.cancelled,
+        done: data.done,
       }))
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-6)
@@ -448,6 +450,10 @@ function ReportsContent() {
                 label: "Cancelled",
                 color: "hsl(var(--chart-5))",
               },
+              done: {
+                label: "Done",
+                color: "hsl(var(--chart-4))",
+              },
             }}
             className={trendChartClass}
           >
@@ -461,6 +467,7 @@ function ReportsContent() {
                 <Line type="monotone" dataKey="confirmed" stroke="var(--color-confirmed)" strokeWidth={2} />
                 <Line type="monotone" dataKey="tentative" stroke="var(--color-tentative)" strokeWidth={2} />
                 <Line type="monotone" dataKey="cancelled" stroke="var(--color-cancelled)" strokeWidth={2} />
+                <Line type="monotone" dataKey="done" stroke="var(--color-done)" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </ChartContainer>

@@ -6,7 +6,7 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User, Loader2 } from "lucide-react"
+import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User, Loader2, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState, useEffect } from "react"
@@ -70,7 +70,7 @@ export default function DashboardPage() {
   }, [todayBookings, bookings, venues])
 
   const stats = useMemo(() => {
-    if (!bookings) return { total: 0, confirmed: 0, tentative: 0, todayPax: 0 }
+    if (!bookings) return { total: 0, confirmed: 0, tentative: 0, done: 0, todayPax: 0 }
 
     const todayPax = todayBookings.reduce((sum, b) => sum + b.pax, 0)
 
@@ -78,6 +78,7 @@ export default function DashboardPage() {
       total: bookings.length,
       confirmed: bookings.filter((b) => b.status === "confirmed").length,
       tentative: bookings.filter((b) => b.status === "tentative").length,
+      done: bookings.filter((b) => b.status === "done").length,
       todayPax,
     }
   }, [bookings, todayBookings])
@@ -90,6 +91,8 @@ export default function DashboardPage() {
         return "secondary"
       case "cancelled":
         return "destructive"
+      case "done":
+        return "default"
     }
   }
 
@@ -101,6 +104,8 @@ export default function DashboardPage() {
         return "bg-amber-500/35"
       case "cancelled":
         return "bg-red-500/35"
+      case "done":
+        return "bg-sky-500/35"
     }
   }
 
@@ -112,6 +117,8 @@ export default function DashboardPage() {
         return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
       case "cancelled":
         return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
+      case "done":
+        return "bg-sky-500/15 text-sky-700 border-sky-500/25 dark:text-sky-300"
     }
   }
 
@@ -142,7 +149,7 @@ export default function DashboardPage() {
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 py-1">
             {isLoadingAny ? (
               <>
-                {Array.from({ length: 4 }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                   <Card key={i} className="min-w-[150px] p-2">
                     <div className="space-y-1">
                       <Skeleton className="h-3 w-24" />
@@ -201,16 +208,28 @@ export default function DashboardPage() {
                 </div>
               </div>
             </Card>
+
+            <Card className="min-w-[150px] p-2 bg-gradient-to-br from-sky-500/20 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="space-y-1">
+                <div className="text-[10px] font-medium text-muted-foreground">Done</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-semibold">{stats.done}</span>
+                  </div>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
               </>
             )}
           </div>
         </div>
 
         {/* Stats Cards - Desktop grid */}
-        <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-2">
+        <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-2">
           {isLoadingAny ? (
             <>
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <Card key={i}>
                   <CardContent className="p-4">
                     <Skeleton className="h-5 w-28 mb-2" />
@@ -262,6 +281,17 @@ export default function DashboardPage() {
             <CardContent className="py-2">
               <div className="text-2xl font-bold">{stats.tentative}</div>
               <p className="text-xs text-muted-foreground">Needs confirmation</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-br from-sky-500/10 to-transparent">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2">
+              <CardTitle className="text-sm font-medium">Done</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="py-2">
+              <div className="text-2xl font-bold">{stats.done}</div>
+              <p className="text-xs text-muted-foreground">Completed bookings</p>
             </CardContent>
           </Card>
             </>

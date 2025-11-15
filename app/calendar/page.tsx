@@ -62,6 +62,7 @@ function CalendarContent() {
     confirmed: { badge: "bg-emerald-500/15 text-emerald-700 border-emerald-500/25 dark:text-emerald-300", stripe: "border-emerald-500" },
     tentative: { badge: "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300", stripe: "border-amber-500" },
     cancelled: { badge: "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300", stripe: "border-red-500" },
+    done: { badge: "bg-sky-500/15 text-sky-700 border-sky-500/25 dark:text-sky-300", stripe: "border-sky-500" },
   } as const
 
   const getStatusBadgeClass = (status: Booking["status"]) => statusStyles[status].badge

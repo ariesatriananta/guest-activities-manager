@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   ga_name      text,
   driver_name  text,
   remark       text,
-  status       text NOT NULL CHECK (status IN ('tentative','confirmed','cancelled')),
+  status       text NOT NULL CHECK (status IN ('tentative','confirmed','cancelled','done')),
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now(),
   created_by   uuid REFERENCES profiles(id),
@@ -169,10 +169,10 @@ WHERE NOT EXISTS (
 ALTER TABLE bookings
   DROP CONSTRAINT IF EXISTS bookings_status_check;
 
--- bikin constraint baru termasuk 'tentative'
+-- bikin constraint baru termasuk status terbaru
 ALTER TABLE bookings
   ADD CONSTRAINT bookings_status_check
-  CHECK (status IN ('tentative','confirmed','cancelled'));
+  CHECK (status IN ('tentative','confirmed','cancelled','done'));
 
 
 

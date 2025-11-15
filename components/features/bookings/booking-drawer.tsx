@@ -57,6 +57,8 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
         return "bg-amber-500/15 text-amber-700 border-amber-500/25 dark:text-amber-300"
       case "cancelled":
         return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300"
+      case "done":
+        return "bg-sky-500/15 text-sky-700 border-sky-500/25 dark:text-sky-300"
       default:
         return ""
     }

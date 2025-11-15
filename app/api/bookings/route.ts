@@ -80,7 +80,7 @@ export async function POST(req: Request) {
   `
   const v = venues[0]
   if (v?.is_single_booking_per_day) {
-    const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status = 'confirmed' LIMIT 1`
+    const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status IN ('confirmed','done') LIMIT 1`
     if (conflicts.length > 0) {
       return NextResponse.json({ error: `Venue ${v.name} already has a booking on ${date}` }, { status: 400 })
     }
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `End time is required for venue ${v.name}` }, { status: 400 })
     }
     const overlaps = await sql`SELECT 1 FROM bookings
-      WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status = 'confirmed'
+      WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status IN ('confirmed','done')
         AND NOT ( ${endTime}::time <= start_time OR ${startTime}::time >= COALESCE(end_time, start_time) )
       LIMIT 1`
     if (overlaps.length > 0) {
