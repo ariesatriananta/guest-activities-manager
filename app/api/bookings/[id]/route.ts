@@ -136,8 +136,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
+  const userRole = (session.user as any)?.role ?? "staff"
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Only admins may delete bookings" }, { status: 403 })
+  }
+  const exists = await sql`SELECT 1 FROM bookings WHERE id = ${id} LIMIT 1`
+  if (exists.length === 0) {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 })
+  }
   await sql`DELETE FROM bookings WHERE id = ${id}`
   return NextResponse.json({ ok: true })
 }

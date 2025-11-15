@@ -63,7 +63,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
       }
       setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
     } catch (error) {
-      console.error("[v0] Failed to update booking:", error)
+      console.warn("[v0] Failed to update booking:", error)
       toast.error((error as any)?.message || "Failed to update booking")
     }
   }
@@ -80,7 +80,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
       }
       setTimeout(() => { try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {} }, 50)
     } catch (error) {
-      console.error("[v0] Failed to delete booking:", error)
+      console.warn("[v0] Failed to delete booking:", error)
       toast.error((error as any)?.message || "Failed to delete booking")
     }
   }
