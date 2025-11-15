@@ -200,10 +200,10 @@ END:VCALENDAR`
               Edit Booking
             </Button>
 
-            <Button variant="outline" className="w-full bg-transparent" onClick={handlePrintBEO}>
+            {/* <Button variant="outline" className="w-full bg-transparent" onClick={handlePrintBEO}>
               <Printer className="h-4 w-4 mr-2" />
               Print BEO
-            </Button>
+            </Button> */}
 
             {/* Close at the very bottom */}
             <Button variant="outline" className="w-full bg-transparent" onClick={onClose}>

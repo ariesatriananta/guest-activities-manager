@@ -88,10 +88,10 @@ export default function BEOPage({ params }: { params: Promise<{ id: string }> })
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <Button onClick={handlePrint}>
+          {/* <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Print BEO
-          </Button>
+          </Button> */}
         </div>
       </div>
 
