@@ -11,7 +11,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Drop if migrating from previous non-UUID structure
+DROP TABLE IF EXISTS booking_history;
 DROP TABLE IF EXISTS bookings CASCADE;
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -52,6 +52,18 @@ ALTER TABLE IF EXISTS bookings
 
 ALTER TABLE IF EXISTS bookings
   ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES profiles(id);
+
+-- History table for booking changes
+CREATE TABLE IF NOT EXISTS booking_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  actor_id uuid REFERENCES profiles(id),
+  action text NOT NULL,
+  changes jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_booking_history_booking ON booking_history(booking_id);
 
 -- Seed sample bookings (from mockDB) using Jakarta local date
 -- Avoid duplicates using WHERE NOT EXISTS guards

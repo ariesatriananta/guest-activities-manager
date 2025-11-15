@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { sql } from "@/lib/db"
 
+const toHHmm = (t: string) => {
+  const [h, m] = t.split(":")
+  return `${h.padStart(2, "0")}:${(m || "00").padStart(2, "0")}`
+}
+
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -41,6 +46,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
   const userId = (session.user as any)?.id ?? null
+  const originalRawRows = await sql<any[]>`
+    SELECT date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status
+    FROM bookings
+    WHERE id = ${id}
+    LIMIT 1
+  `
+  if (originalRawRows.length === 0) {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 })
+  }
+  const originalRaw = originalRawRows[0]
   const body = await req.json()
   const {
     date,
@@ -126,12 +141,136 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updated.created_by as "createdById",
       updated.updated_by as "updatedById",
       creator.name as "createdByName",
-      updater.name as "updatedByName"
+      updater.name as "updatedByName",
+      updated.date as "_raw_date",
+      updated.start_time as "_raw_start_time",
+      updated.end_time as "_raw_end_time",
+      updated.activity_id as "_raw_activity_id",
+      updated.venue_id as "_raw_venue_id",
+      updated.guest_name as "_raw_guest_name",
+      updated.suite_number as "_raw_suite_number",
+      updated.pax as "_raw_pax",
+      updated.ga_name as "_raw_ga_name",
+      updated.driver_name as "_raw_driver_name",
+      updated.remark as "_raw_remark",
+      updated.status as "_raw_status"
     FROM updated
     LEFT JOIN profiles creator ON creator.id = updated.created_by
     LEFT JOIN profiles updater ON updater.id = updated.updated_by
   `
-  return NextResponse.json(rows[0])
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "Booking not found" }, { status: 404 })
+  }
+  const updatedData = rows[0]
+  const updatedRaw = {
+    date: updatedData._raw_date,
+    start_time: updatedData._raw_start_time,
+    end_time: updatedData._raw_end_time,
+    activity_id: updatedData._raw_activity_id,
+    venue_id: updatedData._raw_venue_id,
+    guest_name: updatedData._raw_guest_name,
+    suite_number: updatedData._raw_suite_number,
+    pax: updatedData._raw_pax,
+    ga_name: updatedData._raw_ga_name,
+    driver_name: updatedData._raw_driver_name,
+    remark: updatedData._raw_remark,
+    status: updatedData._raw_status,
+  }
+  const rawKeys = [
+    "_raw_date",
+    "_raw_start_time",
+    "_raw_end_time",
+    "_raw_activity_id",
+    "_raw_venue_id",
+    "_raw_guest_name",
+    "_raw_suite_number",
+    "_raw_pax",
+    "_raw_ga_name",
+    "_raw_driver_name",
+    "_raw_remark",
+    "_raw_status",
+  ]
+  rawKeys.forEach((key) => {
+    delete (updatedData as any)[key]
+  })
+
+  const valueCache = new Map<string, string | null>()
+  const trackedFields = [
+    { key: "date", label: "Date" },
+    { key: "start_time", label: "Start Time" },
+    { key: "end_time", label: "End Time" },
+    { key: "activity_id", label: "Activity" },
+    { key: "venue_id", label: "Venue" },
+    { key: "guest_name", label: "Guest Name" },
+    { key: "suite_number", label: "Suite Number" },
+    { key: "pax", label: "Pax" },
+    { key: "ga_name", label: "GA Name" },
+    { key: "driver_name", label: "Driver Name" },
+    { key: "remark", label: "Remark" },
+    { key: "status", label: "Status" },
+  ] as const
+
+  const formatFieldValue = async (field: string, value: any): Promise<string | null> => {
+    if (value === null || typeof value === "undefined") return null
+    const cacheKey = `${field}:${value}`
+    if (valueCache.has(cacheKey)) return valueCache.get(cacheKey) ?? null
+    let formatted: string | null = null
+    switch (field) {
+      case "date":
+        formatted = typeof value === "string" ? value : String(value)
+        break
+      case "start_time":
+      case "end_time":
+        formatted = typeof value === "string" ? toHHmm(value) : null
+        break
+      case "pax":
+        formatted = value !== null ? String(value) : null
+        break
+      case "activity_id": {
+        const rows = await sql<{ name: string }[]>`SELECT name FROM activities WHERE id = ${value} LIMIT 1`
+        formatted = rows[0]?.name || value
+        break
+      }
+      case "venue_id": {
+        const rows = await sql<{ name: string }[]>`SELECT name FROM venues WHERE id = ${value} LIMIT 1`
+        formatted = rows[0]?.name || value
+        break
+      }
+      default:
+        formatted = typeof value === "string" ? value : value !== null ? String(value) : null
+    }
+    valueCache.set(cacheKey, formatted)
+    return formatted
+  }
+
+  const changes: Array<{ field: string; label: string; oldValue: string | null; newValue: string | null }> = []
+  for (const field of trackedFields) {
+    const oldValueRaw = (originalRaw as any)[field.key]
+    const newValueRaw = (updatedRaw as any)[field.key]
+    if ((oldValueRaw ?? null) === (newValueRaw ?? null)) {
+      continue
+    }
+    const [oldValue, newValue] = await Promise.all([
+      formatFieldValue(field.key, oldValueRaw),
+      formatFieldValue(field.key, newValueRaw),
+    ])
+    if (oldValue === newValue) continue
+    changes.push({
+      field: field.key,
+      label: field.label,
+      oldValue,
+      newValue,
+    })
+  }
+
+  if (changes.length > 0) {
+    await sql`
+      INSERT INTO booking_history (booking_id, actor_id, action, changes)
+      VALUES (${id}, ${userId}, 'updated', ${JSON.stringify(changes)}::jsonb)
+    `
+  }
+
+  return NextResponse.json(updatedData)
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {

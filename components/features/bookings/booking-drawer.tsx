@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Edit, Printer, Download, Copy } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useActivities } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
@@ -197,6 +198,11 @@ END:VCALENDAR`
                 <p className="font-medium">{formatDateTimeWithDayJakarta(booking.updatedAt || booking.createdAt)}</p>
                 <p className="text-xs text-muted-foreground">by {booking.updatedByName || booking.createdByName || "System"}</p>
               </div>
+            </div>
+            <div className="pt-2 flex justify-start">
+              <Link href={`/bookings/${booking.id}/history`} className="text-xs font-medium text-primary hover:underline">
+                View change history
+              </Link>
             </div>
           </div>
 

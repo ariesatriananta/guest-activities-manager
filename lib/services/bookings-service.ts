@@ -1,4 +1,4 @@
-import type { Booking, ListBookingsParams } from "@/lib/types"
+import type { Booking, BookingHistoryEntry, ListBookingsParams } from "@/lib/types"
 
 export const bookingsService = {
   getAll: async (params?: ListBookingsParams): Promise<Booking[]> => {
@@ -44,6 +44,12 @@ export const bookingsService = {
       throw new Error(j?.error || "Failed to delete booking")
     }
     return true
+  },
+
+  getHistory: async (id: string): Promise<BookingHistoryEntry[]> => {
+    const res = await fetch(`/api/bookings/${id}/history`, { cache: "no-store" })
+    if (!res.ok) throw new Error("Failed to load history")
+    return res.json()
   },
 
   checkVenueConflict: async (

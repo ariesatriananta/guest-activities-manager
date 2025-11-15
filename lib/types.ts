@@ -47,6 +47,22 @@ export interface Booking {
   updatedByName?: string | null
 }
 
+export interface BookingHistoryChange {
+  field: string
+  label: string
+  oldValue: string | null
+  newValue: string | null
+}
+
+export interface BookingHistoryEntry {
+  id: string
+  bookingId?: string
+  action: "created" | "updated"
+  changes?: BookingHistoryChange[] | null
+  actorName?: string | null
+  createdAt: string
+}
+
 export interface BookingFormData {
   date: string
   startTime: string

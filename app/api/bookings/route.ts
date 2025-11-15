@@ -131,5 +131,12 @@ export async function POST(req: Request) {
     LEFT JOIN profiles creator ON creator.id = inserted.created_by
     LEFT JOIN profiles updater ON updater.id = inserted.updated_by
   `
-  return NextResponse.json(rows[0], { status: 201 })
+  const createdBooking = rows[0]
+  if (createdBooking) {
+    await sql`
+      INSERT INTO booking_history (booking_id, actor_id, action)
+      VALUES (${createdBooking.id}, ${userId}, 'created')
+    `
+  }
+  return NextResponse.json(createdBooking, { status: 201 })
 }

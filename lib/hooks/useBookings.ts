@@ -1,6 +1,6 @@
 import useSWR from "swr"
 import { bookingsService } from "@/lib/services/bookings-service"
-import type { Booking } from "@/lib/types"
+import type { Booking, BookingHistoryEntry } from "@/lib/types"
 
 export function useBookings() {
   return useSWR<Booking[]>("bookings", () => bookingsService.getAll())
@@ -51,4 +51,8 @@ export function useCheckVenueConflict() {
       return bookingsService.checkVenueConflict(date, venueId, { excludeBookingId, startTime, endTime })
     },
   }
+}
+
+export function useBookingHistory(id: string) {
+  return useSWR<BookingHistoryEntry[]>(id ? `booking-history-${id}` : null, () => bookingsService.getHistory(id))
 }
