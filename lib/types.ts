@@ -77,6 +77,7 @@ export interface BookingFormData {
   driverName: string
   remark: string
   status: BookingStatus
+  allowTentativeOverride?: boolean
 }
 
 export interface ListBookingsParams {

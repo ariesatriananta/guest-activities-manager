@@ -19,7 +19,11 @@ export const bookingsService = {
     return (await res.json()) || undefined
   },
 
-  create: async (data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName">): Promise<Booking> => {
+  create: async (
+    data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName"> & {
+      allowTentativeOverride?: boolean
+    },
+  ): Promise<Booking> => {
     const res = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
     if (!res.ok) {
       const j = await res.json().catch(() => null)
@@ -28,7 +32,7 @@ export const bookingsService = {
     return res.json()
   },
 
-  update: async (id: string, data: Partial<Booking>): Promise<Booking | null> => {
+  update: async (id: string, data: Partial<Booking> & { allowTentativeOverride?: boolean }): Promise<Booking | null> => {
     const res = await fetch(`/api/bookings/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
     if (!res.ok) {
       const j = await res.json().catch(() => null)

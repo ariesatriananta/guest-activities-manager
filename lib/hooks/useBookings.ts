@@ -14,7 +14,11 @@ export function useCreateBooking() {
   const { mutate } = useSWR<Booking[]>("bookings")
 
   return {
-    mutateAsync: async (data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName">) => {
+    mutateAsync: async (
+      data: Omit<Booking, "id" | "createdAt" | "updatedAt" | "createdById" | "updatedById" | "createdByName" | "updatedByName"> & {
+        allowTentativeOverride?: boolean
+      },
+    ) => {
       const newBooking = await bookingsService.create(data)
       mutate()
       return newBooking
@@ -26,7 +30,7 @@ export function useUpdateBooking() {
   const { mutate } = useSWR<Booking[]>("bookings")
 
   return {
-    mutateAsync: async ({ id, data }: { id: string; data: Partial<Booking> }) => {
+    mutateAsync: async ({ id, data }: { id: string; data: Partial<Booking> & { allowTentativeOverride?: boolean } }) => {
       const updated = await bookingsService.update(id, data)
       mutate()
       return updated

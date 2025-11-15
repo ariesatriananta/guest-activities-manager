@@ -29,6 +29,7 @@ export default function NewBookingPage() {
         driverName: data.driverName,
         remark: data.remark,
         status: data.status,
+        allowTentativeOverride: data.allowTentativeOverride,
       })
       toast.success("Booking created")
       try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}

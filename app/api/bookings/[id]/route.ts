@@ -70,10 +70,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     driverName,
     remark,
     status,
+    allowTentativeOverride,
   } = body || {}
 
   // Conflict check for single-booking-per-day venues
-  if (venueId && date) {
+  const allowOverride = allowTentativeOverride === true
+
+  if (venueId && date && !allowOverride) {
     const venues = await sql<{ is_single_booking_per_day: boolean; is_exclusive_by_time: boolean; name: string }[]>`
       SELECT is_single_booking_per_day, is_exclusive_by_time, name FROM venues WHERE id = ${venueId} LIMIT 1
     `

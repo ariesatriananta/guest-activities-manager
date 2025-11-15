@@ -16,9 +16,9 @@ export async function POST(req: Request) {
       SELECT id FROM bookings
       WHERE date = ${date}::date
         AND venue_id = ${venueId}::uuid
-        AND status IN ('confirmed','done')
+        AND status IN ('confirmed','done','tentative')
         AND ((${excludeBookingId ?? null}::uuid) IS NULL OR id <> ${excludeBookingId ?? null}::uuid)
-      ORDER BY created_at ASC
+      ORDER BY CASE WHEN status = 'tentative' THEN 1 ELSE 0 END, created_at ASC
       LIMIT 1
     `
     if (conflicts.length > 0) {
@@ -45,10 +45,10 @@ export async function POST(req: Request) {
       SELECT id FROM bookings
       WHERE date = ${date}::date
         AND venue_id = ${venueId}::uuid
-        AND status IN ('confirmed','done')
+        AND status IN ('confirmed','done','tentative')
         AND ((${excludeBookingId ?? null}::uuid) IS NULL OR id <> ${excludeBookingId ?? null}::uuid)
         AND NOT ( ${endTime}::time <= start_time OR ${startTime}::time >= COALESCE(end_time, start_time) )
-      ORDER BY created_at ASC
+      ORDER BY CASE WHEN status = 'tentative' THEN 1 ELSE 0 END, created_at ASC
       LIMIT 1
     `
     if (overlaps.length > 0) {

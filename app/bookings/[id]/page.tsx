@@ -52,6 +52,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           driverName: data.driverName,
           remark: data.remark,
           status: data.status,
+          allowTentativeOverride: data.allowTentativeOverride,
         },
       })
       toast.success("Booking updated")

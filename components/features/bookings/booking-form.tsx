@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { todayISOInJakarta } from "@/lib/utils"
+import { format } from "date-fns"
 import { DateField } from "@/components/ui/date-field"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -60,8 +61,37 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [conflictActivity, setConflictActivity] = useState("")
   const [conflictStatus, setConflictStatus] = useState("")
   const [conflictPolicy, setConflictPolicy] = useState<string>("")
+  const [conflictMode, setConflictMode] = useState<"hard" | "tentative">("hard")
+  const [conflictHint, setConflictHint] = useState<"existing" | "new">()
+  const [pendingData, setPendingData] = useState<BookingFormData | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+
+  const formatConflictDate = (date: string) => {
+    if (!date) return ""
+    try {
+      return format(new Date(`${date}T00:00:00+07:00`), "dd MMM yyyy")
+    } catch {
+      return date
+    }
+  }
+
+  const closeConflictDialog = () => {
+    setShowConflictDialog(false)
+    setPendingData(null)
+    setConflictHint(undefined)
+  }
+
+  const handleConflictOverride = async () => {
+    if (!pendingData) {
+      closeConflictDialog()
+      return
+    }
+    setShowConflictDialog(false)
+    await handleFormSubmit(pendingData, { skipConflict: true })
+    setPendingData(null)
+    setConflictHint(undefined)
+  }
 
   const { data: categories, isLoading: loadingCategories } = useCategories()
   const { data: venues, isLoading: loadingVenues } = useVenues()
@@ -111,13 +141,17 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
     }
   }
 
-  const handleFormSubmit = async (data: BookingFormData) => {
+  const handleFormSubmit = async (data: BookingFormData, options?: { skipConflict?: boolean }) => {
     setSubmitting(true)
     try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     // Check for venue conflict (per-day or exclusive-by-time)
     const isExclusive = (selectedVenue as any)?.isExclusiveByTime === true
     const isPerDay = selectedVenue?.isSingleBookingPerDay === true
-    if ((isPerDay || isExclusive) && selectedDate && selectedVenueId) {
+    const isEditing = Boolean(excludeBookingId)
+    const statusAllowsOverride = ["tentative", "cancelled"].includes(data.status || "")
+    const shouldSkipForStatus = isEditing && statusAllowsOverride
+
+    if (!options?.skipConflict && !shouldSkipForStatus && (isPerDay || isExclusive) && selectedDate && selectedVenueId) {
       const conflict = await checkConflict.mutateAsync({
         date: selectedDate,
         venueId: selectedVenueId,
@@ -128,24 +162,36 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
 
       if (conflict?.hasConflict) {
         const conflictStatusVal = (conflict as any)?.status || ""
-        // Abaikan konflik bila status existing booking masih tentative
-        if (conflictStatusVal !== 'tentative') {
-          setConflictVenueName(selectedVenue.name)
-          setConflictDate(selectedDate)
-          setConflictGuest(conflict.guestName || "")
-          setConflictActivity(conflict.activityName || "")
-          setConflictStatus(conflictStatusVal)
-          setConflictPolicy((conflict as any)?.policy || "")
-          setShowConflictDialog(true)
-          setSubmitting(false)
-          try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
-          return
+        setConflictVenueName(selectedVenue.name)
+        setConflictDate(formatConflictDate(selectedDate))
+        setConflictGuest(conflict.guestName || "")
+        setConflictActivity(conflict.activityName || "")
+        setConflictStatus(conflictStatusVal)
+        setConflictPolicy((conflict as any)?.policy || "")
+        const isFormTentative = data.status === "tentative"
+        if (conflictStatusVal === "tentative" || isFormTentative) {
+          setConflictMode("tentative")
+          setPendingData(data)
+          setConflictHint(conflictStatusVal === "tentative" ? "existing" : "new")
+        } else {
+          setConflictMode("hard")
+          setPendingData(null)
+          setConflictHint(undefined)
         }
+        setShowConflictDialog(true)
+        setSubmitting(false)
+        try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+        return
       }
     }
 
+    const allowOverrideFlag = options?.skipConflict || shouldSkipForStatus
+    const payload = allowOverrideFlag
+      ? { ...data, allowTentativeOverride: true }
+      : data
+
     try {
-      await onSubmit(data)
+      await onSubmit(payload)
     } finally {
       setSubmitting(false)
       try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
@@ -229,7 +275,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
         </div>
       ) : (
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit((data) => handleFormSubmit(data))} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status + Date side-by-side on mobile */}
             <div className="grid grid-cols-2 gap-4">
@@ -564,10 +610,24 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               ) : (
                 <>This venue only allows one booking per day. Please select a different venue or date.</>
               )}
+              {conflictMode === "tentative" ? (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  {conflictHint === "existing"
+                    ? "The existing booking is still tentative. You may continue submitting if you want to overlap or override it."
+                    : "You are creating a tentative booking. You may continue submitting if you want to allow an overlap."}
+                </span>
+              ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button onClick={() => setShowConflictDialog(false)}>OK</Button>
+            {conflictMode === "tentative" ? (
+              <>
+                <Button variant="outline" onClick={closeConflictDialog}>Cancel</Button>
+                <Button onClick={handleConflictOverride}>Submit anyway</Button>
+              </>
+            ) : (
+              <Button onClick={closeConflictDialog}>OK</Button>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
