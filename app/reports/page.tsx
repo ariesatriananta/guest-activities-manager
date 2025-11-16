@@ -5,11 +5,17 @@ import { useActivities, useCategories } from "@/lib/hooks/useActivities"
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FilterX, RefreshCcw, Loader2 } from "lucide-react"
-import { Download } from "lucide-react"
+import { FilterX, RefreshCcw, Loader2, Download } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { NavLayout } from "@/components/layout/nav-layout"
 import { useMemo, useState, useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useSession } from "next-auth/react"
 import {
   Bar,
   BarChart,
@@ -29,6 +35,7 @@ import { DateField } from "@/components/ui/date-field"
 import { ReportsFiltersSheet } from "@/components/features/reports/filters-sheet"
 
 function ReportsContent() {
+  const { data: session } = useSession()
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
@@ -77,12 +84,20 @@ function ReportsContent() {
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return []
-    return bookings.filter((booking) => {
-      if (booking.status === "cancelled") return false
-      if (dateFrom && booking.date < dateFrom) return false
-      if (dateTo && booking.date > dateTo) return false
-      return true
-    })
+    return bookings
+      .filter((booking) => {
+        if (booking.status === "cancelled") return false
+        if (dateFrom && booking.date < dateFrom) return false
+        if (dateTo && booking.date > dateTo) return false
+        return true
+      })
+      .slice()
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date > b.date ? -1 : 1 // Tanggal desc
+        const ta = a.startTime || "00:00"
+        const tb = b.startTime || "00:00"
+        return ta.localeCompare(tb) // Jam asc
+      })
   }, [bookings, dateFrom, dateTo])
 
   // Bookings by Category
@@ -197,26 +212,231 @@ function ReportsContent() {
   const trendChartClass = isMobile ? "h-[320px] aspect-auto" : "h-[400px]"
   const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s)
 
-  const exportReport = () => {
-    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
-    const report = {
-      generatedAt: new Date().toISOString(),
-      dateRange: { from: dateFrom || "all", to: dateTo || "all" },
-      totalBookings: filteredBookings.length,
-      bookingsByCategory,
-      bookingsByVenue,
-      bookingsByActivity,
-      monthlyTrend,
-      capacityData,
-    }
+  const statusColors = {
+    confirmed: { fill: [16, 185, 129], text: [0, 74, 50] },
+    tentative: { fill: [245, 158, 11], text: [117, 74, 0] },
+    cancelled: { fill: [239, 68, 68], text: [104, 0, 12] },
+    done: { fill: [56, 189, 248], text: [0, 76, 122] },
+  } as const
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" })
+  const fetchLogoDataUrl = async (path: string) => {
+    try {
+      const res = await fetch(path)
+      const blob = await res.blob()
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch {
+      return ""
+    }
+  }
+
+  const exportToXLS = () => {
+    if (!filteredBookings || !venues) return
+
+    const headers = [
+      "Date",
+      "Time",
+      "Guest Name",
+      "Suite",
+      "Pax",
+      "Activities",
+      "Venue",
+      "GA name",
+      "Driver name",
+      "Remark",
+      "Status",
+    ]
+
+    const activityMap = new Map<string, string>()
+    activities?.forEach((a) => activityMap.set(a.id, a.name))
+    const venueMap = new Map<string, string>()
+    venues?.forEach((v) => venueMap.set(v.id, v.name))
+
+    const esc = (s: any) =>
+      String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+    const rows = filteredBookings.map((b) => {
+      const [y, m, d] = (b.date || "").split("-")
+      const date = d && m && y ? `${d}/${m}/${y}` : b.date
+      const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
+      const activityName = activityMap.get(b.activityId) || ""
+      const venueName = venueMap.get(b.venueId) || ""
+      return [
+        date,
+        time,
+        b.guestName,
+        b.suiteNumber,
+        String(b.pax ?? ""),
+        activityName,
+        venueName,
+        b.gaName || "",
+        b.driverName || "",
+        b.remark || "",
+        b.status,
+      ]
+    })
+
+    const cols = headers.map(() => `<Column ss:AutoFitWidth="1" />`).join("")
+    const rowsXml = [
+      `<Row>${headers.map((h) => `<Cell><Data ss:Type="String">${esc(h)}</Data></Cell>`).join("")}</Row>`,
+      ...rows.map(
+        (r) =>
+          `<Row>${r
+            .map((c) => `<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`)
+            .join("")}</Row>`,
+      ),
+    ].join("")
+
+    const xml = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="Bookings">
+    <Table>
+      ${cols}
+      ${rowsXml}
+    </Table>
+  </Worksheet>
+</Workbook>`
+
+    const blob = new Blob([xml], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `report-${new Date().toISOString().split("T")[0]}.json`
+    a.download = `bookings-${new Date().toISOString().split("T")[0]}.xlsx`
+    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
     a.click()
     try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+  }
+  const exportToPDF = () => {
+    const doExport = async () => {
+      if (!filteredBookings || !venues) return
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      try {
+        const { default: jsPDF } = await import("jspdf")
+        const autoTable = (await import("jspdf-autotable")).default
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" })
+        const pageWidth = doc.internal.pageSize.getWidth()
+        const generatedAt = new Date()
+        const generatedBy = session?.user?.name || "System"
+        const formatDateTime = (iso?: string | null) => {
+          if (!iso) return "-"
+          const d = new Date(iso)
+          return d.toLocaleString("en-GB")
+        }
+
+        // Header with logo
+        const logo = await fetchLogoDataUrl("/logo/logo-main.png")
+
+        const headers = [
+          "Date",
+          "Time",
+          "Guest",
+          "Suite",
+          "Pax",
+          "Activities",
+          "Venue",
+          "GA name",
+          "Driver name",
+          "Remark",
+          "Status",
+        ]
+
+        const activityMap = new Map<string, string>()
+        activities?.forEach((a) => activityMap.set(a.id, a.name))
+        const venueMap = new Map<string, string>()
+        venues?.forEach((v) => venueMap.set(v.id, v.name))
+
+        const body = filteredBookings.map((b) => {
+          const [y, m, d] = (b.date || "").split("-")
+          const date = d && m && y ? `${d}/${m}/${y}` : b.date
+          const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
+          const activityName = activityMap.get(b.activityId) || ""
+          const venueName = venueMap.get(b.venueId) || ""
+          const statusStyle = statusColors[b.status as keyof typeof statusColors] || statusColors.confirmed
+          return [
+            date,
+            time,
+            b.guestName,
+            b.suiteNumber,
+            String(b.pax ?? ""),
+            activityName,
+            venueName,
+            b.gaName || "",
+            b.driverName || "",
+            b.remark || "",
+            {
+              content: b.status,
+              styles: {
+                fillColor: statusStyle.fill,
+                textColor: statusStyle.text,
+                fontStyle: "bold",
+                halign: "center",
+                overflow: "visible",
+                cellWidth: 18,
+                lineColor: [255, 255, 255],
+                lineWidth: 0.6,
+              },
+            },
+          ]
+        })
+
+        const drawHeader = () => {
+          if (logo) {
+            doc.addImage(logo, "PNG", 8, 12, 48, 12, undefined, "FAST")
+          }
+          doc.setFontSize(13)
+          doc.text("Bookings Report", pageWidth - 12, 16, { align: "right" })
+          doc.setFontSize(10)
+          doc.text(`Generated by ${generatedBy}`, pageWidth - 12, 21, { align: "right" })
+          doc.text(`Generated at ${generatedAt.toLocaleString("en-GB")}`, pageWidth - 12, 26, { align: "right" })
+        }
+
+        drawHeader()
+
+        ;(autoTable as any)(doc, {
+          head: [headers],
+          body,
+          startY: 32,
+          margin: { top: 32, left: 8, right: 8 },
+          tableWidth: pageWidth - 16,
+          styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
+          headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] },
+          columnStyles: {
+            0: { cellWidth: 18 },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 32 },
+            3: { cellWidth: 16 },
+            4: { cellWidth: 12 },
+            5: { cellWidth: 36 },
+            6: { cellWidth: 32 },
+            7: { cellWidth: 28 },
+            8: { cellWidth: 28 },
+            9: { cellWidth: 36 },
+            10: { cellWidth: 18},
+          },
+          didDrawPage: (data: any) => {
+            const pageHeight = doc.internal.pageSize.getHeight()
+            const pageNumber = doc.internal.getNumberOfPages()
+            drawHeader()
+            doc.setFontSize(8)
+            doc.text(`Page ${data.pageNumber} / ${pageNumber}`, pageWidth - 24, pageHeight - 8)
+          },
+        })
+
+        doc.save(`bookings-${generatedAt.toISOString().split("T")[0]}.pdf`)
+      } catch (err) {
+        console.error("[reports] Failed to export PDF", err)
+      } finally {
+        try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+      }
+    }
+    doExport()
   }
 
   const handleRefresh = async () => {
@@ -246,9 +466,17 @@ function ReportsContent() {
           <Button onClick={handleRefresh} size="icon-sm" variant="outline" aria-label="Refresh" disabled={refreshing}>
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           </Button>
-          <Button onClick={exportReport} size="icon-sm" variant="outline" aria-label="Export Report">
-            <Download className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="outline" aria-label="Export">
+                <Download className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToXLS}>Export Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF}>Export PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

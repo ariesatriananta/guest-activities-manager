@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Eye, Edit, FilterX, Loader2, RefreshCcw } from "lucide-react"
+import { Eye, Edit, FilterX, Loader2, RefreshCcw } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
@@ -160,68 +160,6 @@ function BookingsContent() {
     setVisibleCount(20)
   }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter, router])
 
-  const exportToXLS = () => {
-    if (!filteredBookings || !venues) return
-
-    const headers = [
-      "Date",
-      "Time",
-      "Guest",
-      "Suite",
-      "Pax",
-      "Activities",
-      "Venue",
-      "GA name",
-      "Driver name",
-      "Remark",
-      "Status",
-    ]
-
-    const activityMap = new Map<string, string>()
-    activities?.forEach((a) => activityMap.set(a.id, a.name))
-    const venueMap = new Map<string, string>()
-    venues?.forEach((v) => venueMap.set(v.id, v.name))
-
-    const esc = (s: any) =>
-      String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-
-    const rows = filteredBookings.map((b) => {
-      const [y, m, d] = (b.date || "").split("-")
-      const date = d && m && y ? `${d}/${m}/${y}` : b.date
-      const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
-      const activityName = activityMap.get(b.activityId) || ""
-      const venueName = venueMap.get(b.venueId) || ""
-      return [
-        date,
-        time,
-        b.guestName,
-        b.suiteNumber,
-        String(b.pax ?? ""),
-        activityName,
-        venueName,
-        b.gaName || "",
-        b.driverName || "",
-        b.remark || "",
-        b.status,
-      ]
-    })
-
-    const thead = `<thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`
-    const tbody = `<tbody>${rows
-      .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
-      .join("")}</tbody>`
-    const html = `<table>${thead}${tbody}</table>`
-
-    const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `bookings-${new Date().toISOString().split("T")[0]}.xls`
-    try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
-    a.click()
-    try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
-  }
-
   const handleRefresh = async () => {
     setRefreshing(true)
     try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
@@ -245,9 +183,6 @@ function BookingsContent() {
         <div className="flex gap-2">
           <Button onClick={handleRefresh} size="icon-sm" variant="outline" aria-label="Refresh" disabled={refreshing}>
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-          </Button>
-          <Button onClick={exportToXLS} size="icon-sm" variant="outline" aria-label="Export Excel">
-            <Download className="h-4 w-4" />
           </Button>
         </div>
       </div>
