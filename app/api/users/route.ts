@@ -9,7 +9,7 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(4),
   name: z.string().min(1),
-  role: z.enum(["admin", "staff"]),
+  role: z.enum(["admin", "staff", "viewer"]),
   avatar_img: z.string().url().optional().or(z.literal("")).optional(),
 })
 

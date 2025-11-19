@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useVenues } from "@/lib/hooks/useVenues"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Calendar, Check } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 type Availability = {
   venueId: string
@@ -25,6 +26,8 @@ export function VenueAvailabilitySheet({ onPickSlot, initialVenueId, initialDate
   const [date, setDate] = React.useState<string>(initialDate || "")
   const [loading, setLoading] = React.useState(false)
   const [data, setData] = React.useState<Availability | null>(null)
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
 
   const canFetch = !!venueId && !!date
 
@@ -131,7 +134,12 @@ export function VenueAvailabilitySheet({ onPickSlot, initialVenueId, initialDate
                       <button
                         key={i}
                         type="button"
+                        disabled={role === "viewer"}
                         onClick={() => {
+                          if (role === "viewer") {
+                            alert("Anda tidak diijinkan membuat booking")
+                            return
+                          }
                           if (onPickSlot) onPickSlot({ venueId, date, start: f.start, end: f.end })
                           setOpen(false)
                         }}

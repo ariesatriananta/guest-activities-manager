@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -34,7 +35,7 @@ export function UsersSettings() {
   const { data: users, isLoading } = useQuery({ queryKey: ["users"], queryFn: fetchUsers })
 
   const createUser = useMutation({
-    mutationFn: async (payload: { email: string; password: string; name: string; role: "admin" | "staff"; avatar_img?: string }) => {
+    mutationFn: async (payload: { email: string; password: string; name: string; role: "admin" | "staff" | "viewer"; avatar_img?: string }) => {
       const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
       if (!res.ok) {
         let msg = "Failed to create user"
@@ -48,7 +49,7 @@ export function UsersSettings() {
   })
 
   const updateUser = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name?: string; role?: "admin" | "staff"; avatar_img?: string; password?: string } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { name?: string; role?: "admin" | "staff" | "viewer"; avatar_img?: string; password?: string } }) => {
       const res = await fetch(`/api/users/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
       if (!res.ok) { let msg = "Failed to update user"; try { const j = await res.json(); msg = j?.error || msg } catch {}; throw new Error(msg) }
       return res.json()
@@ -79,7 +80,7 @@ export function UsersSettings() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Profile | null>(null)
-  const [form, setForm] = useState<{ email: string; password: string; name: string; role: "admin" | "staff"; avatar_img: string }>(
+  const [form, setForm] = useState<{ email: string; password: string; name: string; role: "admin" | "staff" | "viewer"; avatar_img: string }>(
     { email: "", password: "", name: "", role: "staff", avatar_img: "" },
   )
   const [formError, setFormError] = useState<string | null>(null)
@@ -184,7 +185,20 @@ export function UsersSettings() {
                   <TableRow key={u.id}>
                     <TableCell className="font-mono">{u.email}</TableCell>
                     <TableCell>{u.name}</TableCell>
-                    <TableCell>{u.role}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          u.role === "admin"
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                            : u.role === "staff"
+                              ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-200"
+                              : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-200"
+                        }
+                      >
+                        {u.role}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{new Date(u.created_at).toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -233,10 +247,11 @@ export function UsersSettings() {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                  </SelectContent>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
                 </Select>
               </div>
               <div className="col-span-2">

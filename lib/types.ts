@@ -89,7 +89,7 @@ export interface ListBookingsParams {
 }
 
 // Auth / Users
-export type UserRole = "admin" | "staff"
+export type UserRole = "admin" | "staff" | "viewer"
 
 export interface Profile {
   id: string

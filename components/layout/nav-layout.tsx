@@ -91,12 +91,14 @@ export function NavLayout({ children }: NavLayoutProps) {
                     </Link>
                   </Button>
                 ) : null}
-                <Button asChild className="hidden sm:inline-flex" disabled={navPending}>
-                  <Link href="/bookings/new" onClick={onNavClick}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="max-sm:hidden">Booking</span>
-                  </Link>
-                </Button>
+                {role !== "viewer" && (
+                  <Button asChild className="hidden sm:inline-flex" disabled={navPending}>
+                    <Link href="/bookings/new" onClick={onNavClick}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      <span className="max-sm:hidden">Booking</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </ClientOnly>
           </div>
@@ -137,7 +139,7 @@ export function NavLayout({ children }: NavLayoutProps) {
                     Bookings
                   </Button>
                 </Link>
-                {(role === "admin" || role === "staff") && (
+                {(role === "admin" || role === "staff" || role === "viewer") && (
                 <Link href="/reports" onClick={onNavClick}>
                   <Button
                     variant="ghost"

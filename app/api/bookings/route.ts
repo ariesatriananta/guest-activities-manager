@@ -57,6 +57,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const role = (session.user as any)?.role as string | undefined
+  if (role === "viewer") return NextResponse.json({ error: "Anda tidak diijinkan membuat booking" }, { status: 403 })
   const userId = (session.user as any)?.id ?? null
   const body = await req.json()
   const {

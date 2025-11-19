@@ -44,6 +44,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const role = (session.user as any)?.role as string | undefined
+  if (role === "viewer") {
+    return NextResponse.json({ error: "Anda tidak diijinkan mengubah booking" }, { status: 403 })
+  }
   const { id } = await params
   const userId = (session.user as any)?.id ?? null
   const originalRawRows = await sql<any[]>`

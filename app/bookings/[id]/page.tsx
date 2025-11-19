@@ -3,12 +3,12 @@
 import { BookingForm } from "@/components/features/bookings/booking-form"
 import { useBooking, useUpdateBooking, useDeleteBooking } from "@/lib/hooks/useBookings"
 import { useActivities } from "@/lib/hooks/useActivities"
+import { useVenues } from "@/lib/hooks/useVenues"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import { useSession } from "next-auth/react"
-import Link from "next/link"
 import { use } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { BookingFormData } from "@/lib/types"
@@ -32,8 +32,10 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
   const router = useRouter()
   const { data: booking, isLoading } = useBooking(id)
   const { data: activities } = useActivities()
+  const { data: venues } = useVenues()
   const updateBooking = useUpdateBooking()
   const deleteBooking = useDeleteBooking()
+  const activity = activities?.find((a) => a.id === booking?.activityId)
 
   const handleSubmit = async (data: BookingFormData) => {
     try {
@@ -134,7 +136,61 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const activity = activities?.find((a) => a.id === booking.activityId)
+  if (role === "viewer") {
+    const venueName = venues?.find((v) => v.id === booking.venueId)?.name || booking.venueId
+    const activityName = activity?.name
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  router.back()
+                } else {
+                  router.push("/bookings")
+                }
+              }}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Booking Detail</h1>
+              <p className="text-muted-foreground">Anda tidak diijinkan mengubah booking ini.</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{activityName || "Booking"}</CardTitle>
+              <CardDescription>{booking.guestName}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Date</span>
+                <span className="font-medium">{booking.date}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Time</span>
+                <span className="font-medium">{booking.startTime} - {booking.endTime}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Venue</span>
+                <span className="font-medium">{venueName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <span className="font-medium capitalize">{booking.status}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">

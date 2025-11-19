@@ -11,7 +11,7 @@ export default withAuth({
       }
       if (pathname.startsWith("/reports")) {
         const role = (token as any).role
-        return role === "admin" || role === "staff"
+        return role === "admin" || role === "staff" || role === "viewer"
       }
       return true
     },

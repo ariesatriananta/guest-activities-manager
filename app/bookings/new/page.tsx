@@ -9,8 +9,11 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import type { BookingFormData } from "@/lib/types"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 export default function NewBookingPage() {
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
   const router = useRouter()
   const createBooking = useCreateBooking()
 
@@ -71,24 +74,36 @@ export default function NewBookingPage() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Details</CardTitle>
-            <CardDescription>Fill in the details for the new booking</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BookingForm
-              onSubmit={handleSubmit}
-              onCancel={() => {
-                if (typeof window !== 'undefined' && window.history.length > 1) {
-                  router.back()
-                } else {
-                  router.push('/bookings')
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
+        {role === "viewer" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Access dibatasi</CardTitle>
+              <CardDescription>Anda tidak diijinkan membuat booking baru.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={() => router.push("/bookings")}>Kembali ke bookings</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Details</CardTitle>
+              <CardDescription>Fill in the details for the new booking</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BookingForm
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    router.back()
+                  } else {
+                    router.push('/bookings')
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

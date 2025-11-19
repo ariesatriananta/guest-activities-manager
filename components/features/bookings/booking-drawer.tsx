@@ -12,6 +12,7 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { useCreateBooking } from "@/lib/hooks/useBookings"
 import type { Booking, BookingStatus } from "@/lib/types"
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 
 interface BookingDrawerProps {
   booking: Booking | null
@@ -26,6 +27,8 @@ export function BookingDrawer({ booking, open, onOpenChange, onClose }: BookingD
   const { data: venues } = useVenues()
   const createBooking = useCreateBooking()
   const [isDuplicating, setIsDuplicating] = useState(false)
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
 
   if (!booking) return null
 
@@ -211,10 +214,12 @@ END:VCALENDAR`
           <Separator />
 
           <div className="space-y-2">
-            <Button className="w-full" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Booking
-            </Button>
+            {role !== "viewer" && (
+              <Button className="w-full" onClick={handleEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Booking
+              </Button>
+            )}
 
             {/* <Button variant="outline" className="w-full bg-transparent" onClick={handlePrintBEO}>
               <Printer className="h-4 w-4 mr-2" />

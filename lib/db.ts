@@ -15,9 +15,8 @@ export type ProfileRow = {
   email: string
   password_hash: string
   name: string
-  role: "admin" | "staff"
+  role: "admin" | "staff" | "viewer"
   avatar_img: string | null
   created_at: string
   updated_at: string
 }
-

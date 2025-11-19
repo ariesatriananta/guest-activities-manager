@@ -6,6 +6,7 @@ import { useCreateBooking } from "@/lib/hooks/useBookings"
 import { useRouter } from "next/navigation"
 import type { BookingFormData } from "@/lib/types"
 import { todayISOInJakarta, formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
+import { useSession } from "next-auth/react"
 
 interface CreateBookingDialogProps {
   open: boolean
@@ -20,6 +21,8 @@ interface CreateBookingDialogProps {
 export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTime, defaultStartTime, defaultEndTime, defaultVenueId }: CreateBookingDialogProps) {
   const router = useRouter()
   const createBooking = useCreateBooking()
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
 
   const handleSubmit = async (data: BookingFormData) => {
     try {
@@ -66,7 +69,13 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
           <DialogTitle>Create New Booking</DialogTitle>
           <DialogDescription>Fill in the details for the new booking</DialogDescription>
         </DialogHeader>
-        <BookingForm defaultValues={defaultValues} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
+        {role === "viewer" ? (
+          <div className="text-sm text-muted-foreground">
+            Anda tidak diijinkan membuat booking baru.
+          </div>
+        ) : (
+          <BookingForm defaultValues={defaultValues} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
+        )}
       </DialogContent>
     </Dialog>
   )

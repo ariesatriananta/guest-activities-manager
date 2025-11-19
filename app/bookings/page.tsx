@@ -18,8 +18,11 @@ import { useMemo, useState, useEffect } from "react"
 import { NavLayout } from "@/components/layout/nav-layout"
 import type { BookingStatus, Booking } from "@/lib/types"
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
+import { useSession } from "next-auth/react"
 
 function BookingsContent() {
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role as string | undefined
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [venueFilter, setVenueFilter] = useState<string>("all")
@@ -365,15 +368,17 @@ function BookingsContent() {
                             <Button variant="ghost" size="sm" onClick={() => openView(booking as Booking)} aria-label="View">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" asChild aria-label="Edit">
-                              <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }}>
-                                {navigatingId === booking.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Edit className="h-4 w-4" />
-                                )}
-                              </Link>
-                            </Button>
+                            {role !== "viewer" && (
+                              <Button variant="ghost" size="sm" asChild aria-label="Edit">
+                                <Link prefetch={false} href={`/bookings/${booking.id}`} onClick={(e) => { e.preventDefault(); goTo(booking.id) }}>
+                                  {navigatingId === booking.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Edit className="h-4 w-4" />
+                                  )}
+                                </Link>
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
