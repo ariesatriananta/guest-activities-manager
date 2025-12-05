@@ -182,7 +182,7 @@ END:VCALENDAR`
             </div>
 
             <div>
-              <p className="text-sm text-muted-foreground">Driver Name</p>
+              <p className="text-sm text-muted-foreground">Driver/Therapist Name</p>
               <p className="font-medium">{booking.driverName || "-"}</p>
             </div>
 

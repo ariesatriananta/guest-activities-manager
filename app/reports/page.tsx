@@ -246,7 +246,7 @@ function ReportsContent() {
       "Activities",
       "Venue",
       "GA name",
-      "Driver name",
+      "Driver/Therapist name",
       "Remark",
       "Status",
     ]
@@ -342,7 +342,7 @@ function ReportsContent() {
           "Activities",
           "Venue",
           "GA name",
-          "Driver name",
+          "Driver/Therapist name",
           "Remark",
           "Status",
         ]

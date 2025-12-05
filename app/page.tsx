@@ -6,7 +6,7 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User, Loader2, CheckCircle } from "lucide-react"
+import { Calendar, Clock, Users, AlertTriangle, LayoutGrid, MapPin, User, Loader2, CheckCircle, StickyNote } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState, useEffect } from "react"
@@ -410,24 +410,29 @@ export default function DashboardPage() {
                             <span className="font-medium">Pax:</span> {booking.pax}
                           </div>
                           {(booking.gaName || booking.driverName) && (
-                            <p className="flex items-center gap-1 truncate sm:whitespace-normal">
-                              <Users className="h-3.5 w-3.5 opacity-70" />
+                            <div className="space-y-0.5">
                               {booking.gaName && (
-                                <>
+                                <p className="flex items-center gap-1 truncate sm:whitespace-normal">
+                                  <Users className="h-3.5 w-3.5 opacity-70" />
                                   <span className="font-medium">GA:</span> {booking.gaName}
-                                </>
+                                </p>
                               )}
-                              {booking.gaName && booking.driverName && " \u2022 "}
                               {booking.driverName && (
-                                <>
-                                  <span className="font-medium">Driver:</span> {booking.driverName}
-                                </>
+                                <p className="flex items-center gap-1 truncate sm:whitespace-normal">
+                                  <Users className="h-3.5 w-3.5 opacity-70" />
+                                  <span className="font-medium">Driver/Therapist:</span> {booking.driverName}
+                                </p>
                               )}
+                            </div>
+                          )}
+                          {booking.remark && (
+                            <p className="flex items-start gap-1 italic whitespace-normal break-words">
+                              <StickyNote className="h-3.5 w-3.5 opacity-70 mt-0.5" />
+                              <span>{booking.remark}</span>
                             </p>
                           )}
-                          {booking.remark && <p className="italic truncate sm:whitespace-normal">{booking.remark}</p>}
-                        </div>
-                      </div>
+                    </div>
+                  </div>
 
                       {/* Desktop-only controls on the right */}
                       <div className="hidden sm:flex gap-2 sm:ml-auto">

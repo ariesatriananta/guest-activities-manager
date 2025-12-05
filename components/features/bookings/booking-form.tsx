@@ -531,7 +531,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
                 name="driverName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Driver Name</FormLabel>
+                    <FormLabel>Driver/Therapist Name</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
