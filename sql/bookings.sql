@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   pax          integer NOT NULL CHECK (pax > 0),
   ga_name      text,
   driver_name  text,
+  bill         text,
   remark       text,
   status       text NOT NULL CHECK (status IN ('tentative','confirmed','cancelled','done')),
   created_at   timestamptz NOT NULL DEFAULT now(),
@@ -52,6 +53,9 @@ ALTER TABLE IF EXISTS bookings
 
 ALTER TABLE IF EXISTS bookings
   ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES profiles(id);
+
+ALTER TABLE IF EXISTS bookings
+  ADD COLUMN IF NOT EXISTS bill text;
 
 -- History table for booking changes
 CREATE TABLE IF NOT EXISTS booking_history (

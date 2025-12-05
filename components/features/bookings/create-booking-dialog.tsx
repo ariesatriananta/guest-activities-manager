@@ -37,6 +37,7 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
         pax: data.pax,
         gaName: data.gaName,
         driverName: data.driverName,
+        bill: data.bill,
         remark: data.remark,
         status: data.status,
       })
@@ -58,6 +59,7 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
     pax: 1,
     gaName: "",
     driverName: "",
+    bill: "",
     remark: "",
     status: "confirmed" as const,
   }

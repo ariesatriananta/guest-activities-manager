@@ -115,6 +115,7 @@ END:VCALENDAR`
         pax: booking.pax,
         gaName: booking.gaName,
         driverName: booking.driverName,
+        bill: booking.bill,
         remark: `${booking.remark} (Duplicate)`,
         status: "tentative",
       })
@@ -185,6 +186,13 @@ END:VCALENDAR`
               <p className="text-sm text-muted-foreground">Driver/Therapist Name</p>
               <p className="font-medium">{booking.driverName || "-"}</p>
             </div>
+
+            {booking.bill && (
+              <div>
+                <p className="text-sm text-muted-foreground">Bill</p>
+                <p className="font-medium whitespace-pre-wrap break-words">{booking.bill}</p>
+              </div>
+            )}
 
             {booking.remark && (
               <div>

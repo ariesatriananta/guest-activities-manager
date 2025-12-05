@@ -24,6 +24,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
            b.pax,
            b.ga_name as "gaName",
            b.driver_name as "driverName",
+           b.bill,
            b.remark,
            b.status,
            b.created_at as "createdAt",
@@ -51,7 +52,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
   const userId = (session.user as any)?.id ?? null
   const originalRawRows = await sql<any[]>`
-    SELECT date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status
+    SELECT date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, bill, remark, status
     FROM bookings
     WHERE id = ${id}
     LIMIT 1
@@ -72,6 +73,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     pax,
     gaName,
     driverName,
+    bill,
     remark,
     status,
     allowTentativeOverride,
@@ -123,6 +125,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         pax = COALESCE(${pax ?? null}::int, pax),
         ga_name = COALESCE(${gaName ?? null}, ga_name),
         driver_name = COALESCE(${driverName ?? null}, driver_name),
+        bill = COALESCE(${bill ?? null}, bill),
         remark = COALESCE(${remark ?? null}, remark),
         status = COALESCE(${status ?? null}, status),
         updated_at = now(),
@@ -141,6 +144,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updated.pax,
       updated.ga_name as "gaName",
       updated.driver_name as "driverName",
+      updated.bill,
       updated.remark,
       updated.status,
       updated.created_at as "createdAt",
@@ -159,6 +163,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updated.pax as "_raw_pax",
       updated.ga_name as "_raw_ga_name",
       updated.driver_name as "_raw_driver_name",
+      updated.bill as "_raw_bill",
       updated.remark as "_raw_remark",
       updated.status as "_raw_status"
     FROM updated
@@ -180,6 +185,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     pax: updatedData._raw_pax,
     ga_name: updatedData._raw_ga_name,
     driver_name: updatedData._raw_driver_name,
+    bill: updatedData._raw_bill,
     remark: updatedData._raw_remark,
     status: updatedData._raw_status,
   }
@@ -194,6 +200,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     "_raw_pax",
     "_raw_ga_name",
     "_raw_driver_name",
+    "_raw_bill",
     "_raw_remark",
     "_raw_status",
   ]
@@ -213,6 +220,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     { key: "pax", label: "Pax" },
     { key: "ga_name", label: "GA Name" },
     { key: "driver_name", label: "Driver Name" },
+    { key: "bill", label: "Bill" },
     { key: "remark", label: "Remark" },
     { key: "status", label: "Status" },
   ] as const

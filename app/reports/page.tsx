@@ -247,6 +247,7 @@ function ReportsContent() {
       "Venue",
       "GA name",
       "Driver/Therapist name",
+      "Bill",
       "Remark",
       "Status",
     ]
@@ -275,6 +276,7 @@ function ReportsContent() {
         venueName,
         b.gaName || "",
         b.driverName || "",
+        b.bill || "",
         b.remark || "",
         b.status,
       ]
@@ -343,6 +345,7 @@ function ReportsContent() {
           "Venue",
           "GA name",
           "Driver/Therapist name",
+          "Bill",
           "Remark",
           "Status",
         ]
@@ -369,6 +372,7 @@ function ReportsContent() {
             venueName,
             b.gaName || "",
             b.driverName || "",
+            b.bill || "",
             b.remark || "",
             {
               content: b.status,
@@ -417,8 +421,9 @@ function ReportsContent() {
             6: { cellWidth: 32 },
             7: { cellWidth: 28 },
             8: { cellWidth: 28 },
-            9: { cellWidth: 36 },
-            10: { cellWidth: 18},
+            9: { cellWidth: 24 },
+            10: { cellWidth: 36 },
+            11: { cellWidth: 18},
           },
           didDrawPage: (data: any) => {
             const pageHeight = doc.internal.pageSize.getHeight()

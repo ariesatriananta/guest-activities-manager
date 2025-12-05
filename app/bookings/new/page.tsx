@@ -30,6 +30,7 @@ export default function NewBookingPage() {
         pax: data.pax,
         gaName: data.gaName,
         driverName: data.driverName,
+        bill: data.bill,
         remark: data.remark,
         status: data.status,
         allowTentativeOverride: data.allowTentativeOverride,

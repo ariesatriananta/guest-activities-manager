@@ -41,6 +41,7 @@ const bookingSchema = z.object({
   pax: z.coerce.number().min(1, "Pax must be at least 1"),
   gaName: z.string().default(""),
   driverName: z.string().default(""),
+  bill: z.string().default(""),
   remark: z.string().default(""),
   status: z.enum(["tentative", "confirmed", "cancelled", "done"]),
 })
@@ -110,6 +111,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
       pax: 1,
       gaName: "",
       driverName: "",
+      bill: "",
       remark: "",
       status: "confirmed",
       ...defaultValues,
@@ -541,6 +543,20 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
               />
             </div>
           </div>
+
+          <FormField
+            control={form.control}
+            name="bill"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bill</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

@@ -37,6 +37,7 @@ export interface Booking {
   pax: number
   gaName: string
   driverName: string
+  bill: string
   remark: string
   status: BookingStatus
   createdAt: string
@@ -75,6 +76,7 @@ export interface BookingFormData {
   pax: number
   gaName: string
   driverName: string
+  bill: string
   remark: string
   status: BookingStatus
   allowTentativeOverride?: boolean

@@ -32,6 +32,7 @@ export async function GET(req: Request) {
            b.pax,
            b.ga_name as "gaName",
            b.driver_name as "driverName",
+           b.bill,
            b.remark,
            b.status,
            b.created_at as "createdAt",
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
     pax,
     gaName,
     driverName,
+    bill,
     remark,
     status,
     allowTentativeOverride,
@@ -107,9 +109,9 @@ export async function POST(req: Request) {
   const rows = await sql<any[]>`
     WITH inserted AS (
       INSERT INTO bookings (
-        date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, remark, status, created_by, updated_by
+        date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, bill, remark, status, created_by, updated_by
       ) VALUES (
-        ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${remark || null}, ${status}, ${userId}, ${userId}
+        ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${bill || null}, ${remark || null}, ${status}, ${userId}, ${userId}
       )
       RETURNING *
     )
@@ -124,6 +126,7 @@ export async function POST(req: Request) {
       inserted.pax,
       inserted.ga_name as "gaName",
       inserted.driver_name as "driverName",
+      inserted.bill,
       inserted.remark,
       inserted.status,
       inserted.created_at as "createdAt",
