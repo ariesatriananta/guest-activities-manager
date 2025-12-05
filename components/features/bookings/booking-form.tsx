@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import type { BookingFormData } from "@/lib/types"
+import type { BookingFormData, UserRole } from "@/lib/types"
 
 const bookingSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -51,9 +51,10 @@ interface BookingFormProps {
   onSubmit: (data: BookingFormData) => void
   onCancel?: () => void
   excludeBookingId?: string
+  role?: UserRole
 }
 
-export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingId }: BookingFormProps) {
+export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingId, role }: BookingFormProps) {
   const router = useRouter()
   const [showConflictDialog, setShowConflictDialog] = useState(false)
   const [conflictVenueName, setConflictVenueName] = useState("")
@@ -67,6 +68,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
   const [pendingData, setPendingData] = useState<BookingFormData | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const isAdmin: boolean = role === "admin"
 
   const formatConflictDate = (date: string) => {
     if (!date) return ""
@@ -171,7 +173,7 @@ export function BookingForm({ defaultValues, onSubmit, onCancel, excludeBookingI
         setConflictStatus(conflictStatusVal)
         setConflictPolicy((conflict as any)?.policy || "")
         const isFormTentative = data.status === "tentative"
-        if (conflictStatusVal === "tentative" || isFormTentative) {
+        if (conflictStatusVal === "tentative" || isFormTentative || isAdmin) {
           setConflictMode("tentative")
           setPendingData(data)
           setConflictHint(conflictStatusVal === "tentative" ? "existing" : "new")

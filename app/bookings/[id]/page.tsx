@@ -11,7 +11,7 @@ import { ArrowLeft, Trash2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { use } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { BookingFormData } from "@/lib/types"
+import type { BookingFormData, UserRole } from "@/lib/types"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ import {
 
 export default function EditBookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession()
-  const role = (session?.user as any)?.role as string | undefined
+  const role = (session?.user as any)?.role as UserRole | undefined
   const { id } = use(params)
   const router = useRouter()
   const { data: booking, isLoading } = useBooking(id)
@@ -250,6 +250,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
           </CardHeader>
           <CardContent>
             <BookingForm
+              role={role}
               defaultValues={{
                 date: booking.date,
                 startTime: booking.startTime,

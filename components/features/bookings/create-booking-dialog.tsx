@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { BookingForm } from "./booking-form"
 import { useCreateBooking } from "@/lib/hooks/useBookings"
 import { useRouter } from "next/navigation"
-import type { BookingFormData } from "@/lib/types"
+import type { BookingFormData, UserRole } from "@/lib/types"
 import { todayISOInJakarta, formatDateISOInTZ, JAKARTA_TZ } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 
@@ -22,7 +22,7 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
   const router = useRouter()
   const createBooking = useCreateBooking()
   const { data: session } = useSession()
-  const role = (session?.user as any)?.role as string | undefined
+  const role = (session?.user as any)?.role as UserRole | undefined
 
   const handleSubmit = async (data: BookingFormData) => {
     try {
@@ -76,7 +76,12 @@ export function CreateBookingDialog({ open, onOpenChange, defaultDate, defaultTi
             Anda tidak diijinkan membuat booking baru.
           </div>
         ) : (
-          <BookingForm defaultValues={defaultValues} onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
+          <BookingForm
+            defaultValues={defaultValues}
+            onSubmit={handleSubmit}
+            onCancel={() => onOpenChange(false)}
+            role={role}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import type { BookingFormData } from "@/lib/types"
+import type { BookingFormData, UserRole } from "@/lib/types"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 
 export default function NewBookingPage() {
   const { data: session } = useSession()
-  const role = (session?.user as any)?.role as string | undefined
+  const role = (session?.user as any)?.role as UserRole | undefined
   const router = useRouter()
   const createBooking = useCreateBooking()
 
@@ -93,6 +93,7 @@ export default function NewBookingPage() {
             </CardHeader>
             <CardContent>
               <BookingForm
+                role={role}
                 onSubmit={handleSubmit}
                 onCancel={() => {
                   if (typeof window !== 'undefined' && window.history.length > 1) {
