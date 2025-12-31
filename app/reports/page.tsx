@@ -6,6 +6,7 @@ import { useVenues } from "@/lib/hooks/useVenues"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FilterX, RefreshCcw, Loader2, Download } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,41 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { DateField } from "@/components/ui/date-field"
 import { ReportsFiltersSheet } from "@/components/features/reports/filters-sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+type ExportFormat = "xls" | "pdf"
+type ExportSortField = "date_time" | "suite" | "guest" | "none"
+type ExportSortDir = "asc" | "desc"
+
+const exportColumnDefs = [
+  { key: "date", label: "Date" },
+  { key: "time", label: "Time" },
+  { key: "guest", label: "Guest Name" },
+  { key: "suite", label: "Suite" },
+  { key: "pax", label: "Pax" },
+  { key: "activity", label: "Activities" },
+  { key: "venue", label: "Venue" },
+  { key: "ga", label: "GA name" },
+  { key: "driver", label: "Driver/Therapist name" },
+  { key: "bill", label: "Bill" },
+  { key: "remark", label: "Remark" },
+  { key: "status", label: "Status" },
+] as const
+
+const exportColumnWidths: Record<string, number> = {
+  date: 18,
+  time: 22,
+  guest: 32,
+  suite: 16,
+  pax: 12,
+  activity: 36,
+  venue: 32,
+  ga: 28,
+  driver: 28,
+  bill: 24,
+  remark: 36,
+  status: 18,
+}
 
 function ReportsContent() {
   const { data: session } = useSession()
@@ -47,6 +83,23 @@ function ReportsContent() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportFormat, setExportFormat] = useState<ExportFormat | null>(null)
+  const [exportDateFrom, setExportDateFrom] = useState("")
+  const [exportDateTo, setExportDateTo] = useState("")
+  const [exportActivityId, setExportActivityId] = useState<string>("all")
+  const [exportVenueId, setExportVenueId] = useState<string>("all")
+const [exportSorts, setExportSorts] = useState<Array<{ field: ExportSortField; direction: ExportSortDir }>>([
+  { field: "date_time", direction: "desc" },
+  { field: "none", direction: "asc" },
+])
+  const [exportColumns, setExportColumns] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    exportColumnDefs.forEach((col) => {
+      initial[col.key] = true
+    })
+    return initial
+  })
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)")
@@ -156,6 +209,14 @@ function ReportsContent() {
       .slice(0, 10)
   }, [filteredBookings, activities])
 
+  const sortedActivities = useMemo(() => {
+    return (activities || []).slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+  }, [activities])
+
+  const sortedVenues = useMemo(() => {
+    return (venues || []).slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+  }, [venues])
+
   // Monthly Trend
   const monthlyTrend = useMemo(() => {
     if (!bookings) return []
@@ -234,23 +295,83 @@ function ReportsContent() {
     }
   }
 
-  const exportToXLS = () => {
-    if (!filteredBookings || !venues) return
+  const openExportDialog = (format: ExportFormat) => {
+    setExportFormat(format)
+    setExportDateFrom(dateFrom)
+    setExportDateTo(dateTo)
+    setExportDialogOpen(true)
+  }
 
-    const headers = [
-      "Date",
-      "Time",
-      "Guest Name",
-      "Suite",
-      "Pax",
-      "Activities",
-      "Venue",
-      "GA name",
-      "Driver/Therapist name",
-      "Bill",
-      "Remark",
-      "Status",
-    ]
+  const updateSort = (index: number, update: Partial<{ field: ExportSortField; direction: ExportSortDir }>) => {
+    setExportSorts((prev) =>
+      prev.map((item, idx) => (idx === index ? { ...item, ...update } : item)),
+    )
+  }
+
+  const getSelectedColumns = () => {
+    const selected = exportColumnDefs.filter((col) => exportColumns[col.key])
+    return selected.length > 0 ? selected : exportColumnDefs
+  }
+
+  const getActiveSorts = () => {
+    const seen = new Set<string>()
+    const active = exportSorts
+      .filter((s) => s.field !== "none")
+      .filter((s) => {
+        if (!s.field || seen.has(s.field)) return false
+        seen.add(s.field)
+        return true
+      })
+    return active.length > 0 ? active : [{ field: "date_time" as ExportSortField, direction: "desc" as ExportSortDir }]
+  }
+
+  const compareBookings = (a: any, b: any, field: ExportSortField, direction: ExportSortDir) => {
+    if (field === "date_time") {
+      const dateCmp = a.date.localeCompare(b.date)
+      if (dateCmp !== 0) return direction === "asc" ? dateCmp : -dateCmp
+      const timeCmp = (a.startTime || "").localeCompare(b.startTime || "")
+      return timeCmp
+    }
+    if (field === "suite") {
+      const suiteCmp = String(a.suiteNumber || "").localeCompare(String(b.suiteNumber || ""), undefined, { numeric: true, sensitivity: "base" })
+      return direction === "asc" ? suiteCmp : -suiteCmp
+    }
+    if (field === "guest") {
+      const guestCmp = String(a.guestName || "").localeCompare(String(b.guestName || ""), undefined, { sensitivity: "base" })
+      return direction === "asc" ? guestCmp : -guestCmp
+    }
+    return 0
+  }
+
+  const getExportBookings = () => {
+    if (!bookings) return []
+    let rows = bookings.filter((b) => b.status !== "cancelled")
+    if (exportDateFrom) rows = rows.filter((b) => b.date >= exportDateFrom)
+    if (exportDateTo) rows = rows.filter((b) => b.date <= exportDateTo)
+    if (exportActivityId !== "all") rows = rows.filter((b) => b.activityId === exportActivityId)
+    if (exportVenueId !== "all") rows = rows.filter((b) => b.venueId === exportVenueId)
+
+    const sorts = getActiveSorts()
+    return rows.slice().sort((a, b) => {
+      for (const sort of sorts) {
+        const cmp = compareBookings(a, b, sort.field, sort.direction)
+        if (cmp !== 0) return cmp
+      }
+      return 0
+    })
+  }
+
+  const formatExportDate = (iso?: string | null) => {
+    const [y, m, d] = (iso || "").split("-")
+    return d && m && y ? `${d}/${m}/${y}` : iso || ""
+  }
+
+  const exportToXLS = () => {
+    const exportRows = getExportBookings()
+    if (!exportRows || !venues) return
+
+    const selectedColumns = getSelectedColumns()
+    const headers = selectedColumns.map((col) => col.label)
 
     const activityMap = new Map<string, string>()
     activities?.forEach((a) => activityMap.set(a.id, a.name))
@@ -260,26 +381,26 @@ function ReportsContent() {
     const esc = (s: any) =>
       String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
-    const rows = filteredBookings.map((b) => {
-      const [y, m, d] = (b.date || "").split("-")
-      const date = d && m && y ? `${d}/${m}/${y}` : b.date
+    const rows = exportRows.map((b) => {
+      const date = formatExportDate(b.date)
       const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
       const activityName = activityMap.get(b.activityId) || ""
       const venueName = venueMap.get(b.venueId) || ""
-      return [
+      const values: Record<string, string> = {
         date,
         time,
-        b.guestName,
-        b.suiteNumber,
-        String(b.pax ?? ""),
-        activityName,
-        venueName,
-        b.gaName || "",
-        b.driverName || "",
-        b.bill || "",
-        b.remark || "",
-        b.status,
-      ]
+        guest: b.guestName,
+        suite: b.suiteNumber,
+        pax: String(b.pax ?? ""),
+        activity: activityName,
+        venue: venueName,
+        ga: b.gaName || "",
+        driver: b.driverName || "",
+        bill: b.bill || "",
+        remark: b.remark || "",
+        status: b.status,
+      }
+      return selectedColumns.map((col) => values[col.key])
     })
 
     const cols = headers.map(() => `<Column ss:AutoFitWidth="1" />`).join("")
@@ -317,7 +438,8 @@ function ReportsContent() {
   }
   const exportToPDF = () => {
     const doExport = async () => {
-      if (!filteredBookings || !venues) return
+      const exportRows = getExportBookings()
+      if (!exportRows || !venues) return
       try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
       try {
         const { default: jsPDF } = await import("jspdf")
@@ -335,46 +457,33 @@ function ReportsContent() {
         // Header with logo
         const logo = await fetchLogoDataUrl("/logo/logo-main.png")
 
-        const headers = [
-          "Date",
-          "Time",
-          "Guest",
-          "Suite",
-          "Pax",
-          "Activities",
-          "Venue",
-          "GA name",
-          "Driver/Therapist name",
-          "Bill",
-          "Remark",
-          "Status",
-        ]
+        const selectedColumns = getSelectedColumns()
+        const headers = selectedColumns.map((col) => col.label)
 
         const activityMap = new Map<string, string>()
         activities?.forEach((a) => activityMap.set(a.id, a.name))
         const venueMap = new Map<string, string>()
         venues?.forEach((v) => venueMap.set(v.id, v.name))
 
-        const body = filteredBookings.map((b) => {
-          const [y, m, d] = (b.date || "").split("-")
-          const date = d && m && y ? `${d}/${m}/${y}` : b.date
+        const body = exportRows.map((b) => {
+          const date = formatExportDate(b.date)
           const time = `${b.startTime}${b.endTime ? ` - ${b.endTime}` : ""}`
           const activityName = activityMap.get(b.activityId) || ""
           const venueName = venueMap.get(b.venueId) || ""
           const statusStyle = statusColors[b.status as keyof typeof statusColors] || statusColors.confirmed
-          return [
+          const values: Record<string, any> = {
             date,
             time,
-            b.guestName,
-            b.suiteNumber,
-            String(b.pax ?? ""),
-            activityName,
-            venueName,
-            b.gaName || "",
-            b.driverName || "",
-            b.bill || "",
-            b.remark || "",
-            {
+            guest: b.guestName,
+            suite: b.suiteNumber,
+            pax: String(b.pax ?? ""),
+            activity: activityName,
+            venue: venueName,
+            ga: b.gaName || "",
+            driver: b.driverName || "",
+            bill: b.bill || "",
+            remark: b.remark || "",
+            status: {
               content: b.status,
               styles: {
                 fillColor: statusStyle.fill,
@@ -382,12 +491,13 @@ function ReportsContent() {
                 fontStyle: "bold",
                 halign: "center",
                 overflow: "visible",
-                cellWidth: 18,
+                cellWidth: exportColumnWidths.status,
                 lineColor: [255, 255, 255],
                 lineWidth: 0.6,
               },
             },
-          ]
+          }
+          return selectedColumns.map((col) => values[col.key])
         })
 
         const drawHeader = () => {
@@ -411,20 +521,10 @@ function ReportsContent() {
           tableWidth: pageWidth - 16,
           styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
           headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] },
-          columnStyles: {
-            0: { cellWidth: 18 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 32 },
-            3: { cellWidth: 16 },
-            4: { cellWidth: 12 },
-            5: { cellWidth: 36 },
-            6: { cellWidth: 32 },
-            7: { cellWidth: 28 },
-            8: { cellWidth: 28 },
-            9: { cellWidth: 24 },
-            10: { cellWidth: 36 },
-            11: { cellWidth: 18},
-          },
+          columnStyles: selectedColumns.reduce<Record<number, { cellWidth: number }>>((acc, col, idx) => {
+            acc[idx] = { cellWidth: exportColumnWidths[col.key] || 24 }
+            return acc
+          }, {}),
           didDrawPage: (data: any) => {
             const pageHeight = doc.internal.pageSize.getHeight()
             const pageNumber = doc.internal.getNumberOfPages()
@@ -442,6 +542,16 @@ function ReportsContent() {
       }
     }
     doExport()
+  }
+
+  const handleExportConfirm = () => {
+    if (exportFormat === "xls") {
+      exportToXLS()
+    } else if (exportFormat === "pdf") {
+      exportToPDF()
+    }
+    setExportDialogOpen(false)
+    setExportFormat(null)
   }
 
   const handleRefresh = async () => {
@@ -478,12 +588,164 @@ function ReportsContent() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={exportToXLS}>Export Excel</DropdownMenuItem>
-              <DropdownMenuItem onClick={exportToPDF}>Export PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openExportDialog("xls")}>Export Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openExportDialog("pdf")}>Export PDF</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog
+        open={exportDialogOpen}
+        onOpenChange={(open) => {
+          setExportDialogOpen(open)
+          if (!open) setExportFormat(null)
+        }}
+      >
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Export Report</DialogTitle>
+            <DialogDescription>Set filters, sorting, and visible columns for export.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div>
+              <div className="text-sm font-semibold">Filter</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Date From</div>
+                  <DateField value={exportDateFrom} onChange={setExportDateFrom} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Date To</div>
+                  <DateField value={exportDateTo} onChange={setExportDateTo} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Activities</div>
+                  <Select value={exportActivityId} onValueChange={setExportActivityId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All activities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All activities</SelectItem>
+                      {sortedActivities.map((activity) => (
+                        <SelectItem key={activity.id} value={activity.id}>{activity.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Venue</div>
+                  <Select value={exportVenueId} onValueChange={setExportVenueId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All venues" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All venues</SelectItem>
+                      {sortedVenues.map((venue) => (
+                        <SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-sm font-semibold">Sort</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Sort 1</div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={exportSorts[0]?.field || "none"}
+                      onValueChange={(value) => updateSort(0, { field: value as ExportSortField })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="date_time">Date & Time</SelectItem>
+                        <SelectItem value="suite">No. Kamar</SelectItem>
+                        <SelectItem value="guest">Nama Tamu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={exportSorts[0]?.direction || "asc"}
+                      onValueChange={(value) => updateSort(0, { direction: value as ExportSortDir })}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="Dir" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="asc">Asc</SelectItem>
+                        <SelectItem value="desc">Desc</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Sort 2</div>
+                  <div className="flex gap-2">
+                    <Select
+                      value={exportSorts[1]?.field || "none"}
+                      onValueChange={(value) => updateSort(1, { field: value as ExportSortField })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="date_time">Date & Time</SelectItem>
+                        <SelectItem value="suite">No. Kamar</SelectItem>
+                        <SelectItem value="guest">Nama Tamu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={exportSorts[1]?.direction || "asc"}
+                      onValueChange={(value) => updateSort(1, { direction: value as ExportSortDir })}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="Dir" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="asc">Asc</SelectItem>
+                        <SelectItem value="desc">Desc</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Default: Date desc & Time asc.</div>
+            </div>
+
+            <div>
+              <div className="text-sm font-semibold">Visibility Column</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+                {exportColumnDefs.map((col) => (
+                  <label key={col.key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border"
+                      checked={exportColumns[col.key]}
+                      onChange={() => setExportColumns((prev) => ({ ...prev, [col.key]: !prev[col.key] }))}
+                    />
+                    <span>{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleExportConfirm} disabled={!exportFormat}>
+              Export {exportFormat === "xls" ? "Excel" : exportFormat === "pdf" ? "PDF" : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Toolbar: filters sheet + clear */}
       <div className="flex items-center gap-2 flex-wrap">
