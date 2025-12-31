@@ -613,11 +613,11 @@ const [exportSorts, setExportSorts] = useState<Array<{ field: ExportSortField; d
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Date From</div>
-                  <DateField value={exportDateFrom} onChange={setExportDateFrom} />
+                  <DateField value={exportDateFrom} onChange={setExportDateFrom} modal />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Date To</div>
-                  <DateField value={exportDateTo} onChange={setExportDateTo} />
+                  <DateField value={exportDateTo} onChange={setExportDateTo} modal />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
