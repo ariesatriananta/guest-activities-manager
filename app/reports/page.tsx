@@ -747,25 +747,6 @@ const [exportSorts, setExportSorts] = useState<Array<{ field: ExportSortField; d
         </DialogContent>
       </Dialog>
 
-      {/* Toolbar: filters sheet + clear */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <ReportsFiltersSheet
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          values={{ dateFrom, dateTo }}
-          onApply={(v) => { setDateFrom(v.dateFrom || ""); setDateTo(v.dateTo || "") }}
-          activeCount={activeFilterCount}
-        />
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Clear Filters"
-          onClick={() => { setDateFrom(""); setDateTo("") }}
-        >
-          <FilterX className="h-4 w-4" />
-        </Button>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bookings by Category */}
         <Card>
