@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye, Edit, FilterX, Loader2, RefreshCcw } from "lucide-react"
+import { Eye, Edit, FilterX, Loader2, RefreshCcw, ChevronUp, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
@@ -36,6 +36,8 @@ function BookingsContent() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [visibleCount, setVisibleCount] = useState(20)
+  const [sortField, setSortField] = useState<"date" | "time" | "guest" | "suite" | "pax" | "activity" | "venue" | "status">("date")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const { data: bookings, isLoading, mutate } = useBookings()
   const { data: categories } = useCategories()
   const { data: activities } = useActivities()
@@ -98,6 +100,71 @@ function BookingsContent() {
     })
   }, [bookings, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter, venues, search, activities])
 
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    activities?.forEach((a) => map.set(a.id, a.name))
+    return map
+  }, [activities])
+
+  const venueNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    venues?.forEach((v) => map.set(v.id, v.name))
+    return map
+  }, [venues])
+
+  const sortedBookings = useMemo(() => {
+    const rows = (filteredBookings || []).slice()
+    if (rows.length === 0) return rows
+
+    const dir = sortDir === "asc" ? 1 : -1
+    const compare = (a: Booking, b: Booking) => {
+      switch (sortField) {
+        case "date": {
+          const dateCmp = a.date.localeCompare(b.date)
+          if (dateCmp !== 0) return dir * dateCmp
+          const timeCmp = a.startTime.localeCompare(b.startTime)
+          return dir * timeCmp
+        }
+        case "time": {
+          const timeCmp = a.startTime.localeCompare(b.startTime)
+          return dir * timeCmp
+        }
+        case "guest": {
+          const guestCmp = a.guestName.localeCompare(b.guestName, undefined, { sensitivity: "base" })
+          return dir * guestCmp
+        }
+        case "suite": {
+          const suiteCmp = String(a.suiteNumber || "").localeCompare(String(b.suiteNumber || ""), undefined, { numeric: true, sensitivity: "base" })
+          return dir * suiteCmp
+        }
+        case "pax": {
+          const paxCmp = (a.pax || 0) - (b.pax || 0)
+          return dir * paxCmp
+        }
+        case "activity": {
+          const an = activityNameMap.get(a.activityId) || ""
+          const bn = activityNameMap.get(b.activityId) || ""
+          const activityCmp = an.localeCompare(bn, undefined, { sensitivity: "base" })
+          return dir * activityCmp
+        }
+        case "venue": {
+          const an = venueNameMap.get(a.venueId) || ""
+          const bn = venueNameMap.get(b.venueId) || ""
+          const venueCmp = an.localeCompare(bn, undefined, { sensitivity: "base" })
+          return dir * venueCmp
+        }
+        case "status": {
+          const statusCmp = a.status.localeCompare(b.status)
+          return dir * statusCmp
+        }
+        default:
+          return 0
+      }
+    }
+
+    return rows.sort(compare)
+  }, [filteredBookings, sortField, sortDir, activityNameMap, venueNameMap])
+
   const creatorOptions = useMemo(() => {
     if (!bookings) return []
     const map = new Map<string, string>()
@@ -112,8 +179,8 @@ function BookingsContent() {
   }, [bookings])
 
   const visibleBookings = useMemo(() => {
-    return (filteredBookings || []).slice(0, visibleCount)
-  }, [filteredBookings, visibleCount])
+    return (sortedBookings || []).slice(0, visibleCount)
+  }, [sortedBookings, visibleCount])
 
   // Derive active filter count for badge
   const activeFilterCount = useMemo(() => {
@@ -162,6 +229,29 @@ function BookingsContent() {
     router.replace(`/bookings${url}`, { scroll: false })
     setVisibleCount(20)
   }, [search, dateFrom, dateTo, venueFilter, categoryFilter, statusFilter, creatorFilter, router])
+
+  const handleSort = (field: "date" | "time" | "guest" | "suite" | "pax" | "activity" | "venue" | "status") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+      return
+    }
+    setSortField(field)
+    setSortDir(field === "date" ? "desc" : "asc")
+  }
+
+  const renderSortIcon = (field: "date" | "time" | "guest" | "suite" | "pax" | "activity" | "venue" | "status") => {
+    if (sortField !== field) return null
+    return sortDir === "asc" ? (
+      <ChevronUp className="h-3.5 w-3.5" />
+    ) : (
+      <ChevronDown className="h-3.5 w-3.5" />
+    )
+  }
+
+  const resetSort = () => {
+    setSortField("date")
+    setSortDir("desc")
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -304,23 +394,92 @@ function BookingsContent() {
 
       {/* Desktop table */}
           <Card className="hidden sm:block">
-            <CardHeader>
+          <CardHeader className="flex flex-row items-start justify-between gap-3">
+            <div>
               <CardTitle>All Bookings</CardTitle>
               <CardDescription>{filteredBookings?.length || 0} booking(s) found</CardDescription>
-            </CardHeader>
+            </div>
+            {(sortField !== "date" || sortDir !== "desc") && (
+              <Button size="sm" variant="ghost" onClick={resetSort}>Reset sort</Button>
+            )}
+          </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Guest</TableHead>
-                  <TableHead>Suite</TableHead>
-                  <TableHead>Pax</TableHead>
-                  <TableHead>Activity</TableHead>
-                  <TableHead>Venue</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "date" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("date")}
+                    >
+                      Date {renderSortIcon("date")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "time" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("time")}
+                    >
+                      Time {renderSortIcon("time")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "guest" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("guest")}
+                    >
+                      Guest {renderSortIcon("guest")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "suite" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("suite")}
+                    >
+                      Suite {renderSortIcon("suite")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "pax" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("pax")}
+                    >
+                      Pax {renderSortIcon("pax")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "activity" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("activity")}
+                    >
+                      Activity {renderSortIcon("activity")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "venue" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("venue")}
+                    >
+                      Venue {renderSortIcon("venue")}
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 ${sortField === "status" ? "text-primary font-semibold" : ""}`}
+                      onClick={() => handleSort("status")}
+                    >
+                      Status {renderSortIcon("status")}
+                    </button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
