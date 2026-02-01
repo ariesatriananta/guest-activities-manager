@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, CheckCircle2, Archive, Trash } from "lucide-react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ export function ActivitiesSettings() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
+  const [selectedHasBooking, setSelectedHasBooking] = useState<boolean>(true)
 
   const handleOpenDialog = (activity?: Activity) => {
     if (activity) {
@@ -90,6 +91,7 @@ export function ActivitiesSettings() {
             description: formData.description || undefined,
             duration: formData.duration,
             maxCapacity: formData.maxCapacity,
+            isActive: true,
           }
         })
         toast.success("Activity updated")
@@ -122,7 +124,26 @@ export function ActivitiesSettings() {
 
   const askDelete = (activity: Activity) => {
     setSelectedActivity(activity)
+    setSelectedHasBooking(true)
     setConfirmOpen(true)
+  }
+
+  const handleActivate = async (activity: Activity) => {
+    try {
+      setDeletingId(activity.id)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      await updateActivity.mutateAsync({
+        id: activity.id,
+        data: { isActive: true },
+      })
+      toast.success("Activity activated")
+    } catch (error) {
+      console.error("[v0] Failed to activate activity:", error)
+      toast.error((error as any)?.message || "Failed to activate activity")
+    } finally {
+      setDeletingId(null)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+    }
   }
 
   const onConfirmDelete = async () => {
@@ -130,8 +151,9 @@ export function ActivitiesSettings() {
     try {
       setDeletingId(selectedActivity.id)
       try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
-      await deleteActivity.mutateAsync(selectedActivity.id)
-      toast.success("Activity deleted")
+      const res = await deleteActivity.mutateAsync(selectedActivity.id) as any
+      const deleteMode = res?.deleteMode
+      toast.success(deleteMode === "hard" ? "Activity deleted permanently" : "Activity deactivated")
     } catch (error) {
       console.error("[v0] Failed to delete activity:", error)
       toast.error((error as any)?.message || "Failed to delete activity")
@@ -139,6 +161,25 @@ export function ActivitiesSettings() {
       setDeletingId(null)
       setConfirmOpen(false)
       setSelectedActivity(null)
+      setSelectedHasBooking(true)
+      try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
+    }
+  }
+
+  const handleHardDelete = async (activity: Activity) => {
+    try {
+      setDeletingId(activity.id)
+      try { window.dispatchEvent(new CustomEvent('toploader:start')) } catch {}
+      const res = await fetch(`/api/activities/${activity.id}/usage`, { cache: "no-store" })
+      const data = res.ok ? await res.json() : { hasBooking: true }
+      setSelectedActivity(activity)
+      setSelectedHasBooking(!!data?.hasBooking)
+      setConfirmOpen(true)
+    } catch (error) {
+      console.error("[v0] Failed to check activity usage:", error)
+      toast.error("Failed to check activity usage")
+    } finally {
+      setDeletingId(null)
       try { window.dispatchEvent(new CustomEvent('toploader:stop')) } catch {}
     }
   }
@@ -192,7 +233,16 @@ export function ActivitiesSettings() {
                   const category = categories?.find((c) => c.id === activity.categoryId)
                   return (
                     <TableRow key={activity.id}>
-                      <TableCell className="font-medium">{activity.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{activity.name}</span>
+                          {activity.isActive === false && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-700">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{category?.name || "-"}</TableCell>
                       <TableCell>{activity.duration} min</TableCell>
                       <TableCell>{activity.maxCapacity || "-"}</TableCell>
@@ -201,13 +251,23 @@ export function ActivitiesSettings() {
                           <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(activity)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => askDelete(activity)} disabled={deletingId === activity.id}>
-                            {deletingId === activity.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
+                          {activity.isActive === false ? (
+                            <Button variant="ghost" size="sm" onClick={() => handleActivate(activity)} disabled={deletingId === activity.id} aria-label="Activate">
+                              {deletingId === activity.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={() => handleHardDelete(activity)} disabled={deletingId === activity.id} aria-label="Delete or Deactivate">
+                              {deletingId === activity.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -299,10 +359,14 @@ export function ActivitiesSettings() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogTitle>{selectedHasBooking ? "Deactivate Activity" : "Delete Activity"}</AlertDialogTitle>
             <AlertDialogDescription>
               {selectedActivity ? (
-                <>Are you sure you want to delete <span className="font-medium">{selectedActivity.name}</span>? This cannot be undone.</>
+                selectedHasBooking ? (
+                  <>Are you sure you want to deactivate <span className="font-medium">{selectedActivity.name}</span>? You can re-enable it later.</>
+                ) : (
+                  <>This activity has never been used. Deleting <span className="font-medium">{selectedActivity.name}</span> will remove it permanently and cannot be undone.</>
+                )
               ) : (
                 <>Are you sure?</>
               )}
@@ -311,8 +375,14 @@ export function ActivitiesSettings() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={!!deletingId}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={onConfirmDelete} disabled={!!deletingId}>
-              {deletingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete
+              {deletingId ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : selectedHasBooking ? (
+                <Archive className="mr-2 h-4 w-4" />
+              ) : (
+                <Trash className="mr-2 h-4 w-4" />
+              )}
+              {selectedHasBooking ? "Deactivate" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

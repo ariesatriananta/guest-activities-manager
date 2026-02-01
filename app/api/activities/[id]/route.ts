@@ -40,6 +40,25 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const session = await getServerSession(authOptions)
   if (!session || (session.user as any).role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { id } = await params
-  await sql`DELETE FROM activities WHERE id = ${id}`
-  return NextResponse.json({ ok: true })
+  const usage = await sql<{ has_booking: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM bookings WHERE activity_id = ${id} LIMIT 1) as has_booking
+  `
+  const hasBooking = usage[0]?.has_booking === true
+  if (hasBooking) {
+    const rows = await sql`
+      UPDATE activities
+      SET is_active = false,
+          updated_at = now()
+      WHERE id = ${id}
+      RETURNING id, category_id as "categoryId", name, is_active as "isActive", description, duration, max_capacity as "maxCapacity", created_at, updated_at
+    `
+    return NextResponse.json({ ...rows[0], deleteMode: "soft" })
+  }
+
+  const deleted = await sql`
+    DELETE FROM activities
+    WHERE id = ${id}
+    RETURNING id, category_id as "categoryId", name, is_active as "isActive", description, duration, max_capacity as "maxCapacity", created_at, updated_at
+  `
+  return NextResponse.json({ ...deleted[0], deleteMode: "hard" })
 }

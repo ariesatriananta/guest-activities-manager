@@ -16,6 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { FiltersSheet } from "@/components/features/bookings/filters-sheet"
 import { useMemo, useState, useEffect } from "react"
 import { NavLayout } from "@/components/layout/nav-layout"
+import { todayISOInJakarta } from "@/lib/utils"
 import type { BookingStatus, Booking } from "@/lib/types"
 import { BookingDrawer } from "@/components/features/bookings/booking-drawer"
 import { useSession } from "next-auth/react"
@@ -23,8 +24,9 @@ import { useSession } from "next-auth/react"
 function BookingsContent() {
   const { data: session } = useSession()
   const role = (session?.user as any)?.role as string | undefined
-  const [dateFrom, setDateFrom] = useState("")
-  const [dateTo, setDateTo] = useState("")
+  const today = todayISOInJakarta()
+  const [dateFrom, setDateFrom] = useState(today)
+  const [dateTo, setDateTo] = useState(today)
   const [venueFilter, setVenueFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all")
