@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { bool, dbExecute, dbQuery } from "@/lib/db"
+import { randomUUID } from "crypto"
 import { z } from "zod"
+
+function mapActivity(row: any) {
+  return { ...row, isActive: bool(row.isActive) }
+}
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
@@ -10,20 +15,23 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const categoryId = searchParams.get("categoryId")
   if (categoryId) {
-    const rows = await sql`
-      SELECT id, category_id as "categoryId", name, is_active as "isActive", description, duration, max_capacity as "maxCapacity", created_at, updated_at
+    const rows = await dbQuery(
+      `
+      SELECT id, category_id as categoryId, name, is_active as isActive, description, duration, max_capacity as maxCapacity, created_at, updated_at
       FROM activities
-      WHERE category_id = ${categoryId} AND is_active = true
+      WHERE category_id = ? AND is_active = 1
       ORDER BY created_at DESC
-    `
-    return NextResponse.json(rows)
+    `,
+      [categoryId],
+    )
+    return NextResponse.json(rows.map(mapActivity))
   }
-  const rows = await sql`
-    SELECT id, category_id as "categoryId", name, is_active as "isActive", description, duration, max_capacity as "maxCapacity", created_at, updated_at
+  const rows = await dbQuery(`
+    SELECT id, category_id as categoryId, name, is_active as isActive, description, duration, max_capacity as maxCapacity, created_at, updated_at
     FROM activities
     ORDER BY created_at DESC
-  `
-  return NextResponse.json(rows)
+  `)
+  return NextResponse.json(rows.map(mapActivity))
 }
 
 const createSchema = z.object({
@@ -42,10 +50,22 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 })
   const { name, categoryId, description, duration, maxCapacity, isActive } = parsed.data
-  const rows = await sql`
-    INSERT INTO activities (category_id, name, is_active, description, duration, max_capacity)
-    VALUES (${categoryId}, ${name}, ${isActive ?? true}, ${description ?? null}, ${duration}, ${maxCapacity ?? null})
-    RETURNING id, category_id as "categoryId", name, is_active as "isActive", description, duration, max_capacity as "maxCapacity", created_at, updated_at
-  `
-  return NextResponse.json(rows[0], { status: 201 })
+  const id = randomUUID()
+  await dbExecute(
+    `
+    INSERT INTO activities (id, category_id, name, is_active, description, duration, max_capacity)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `,
+    [id, categoryId, name, isActive ?? true, description ?? null, duration, maxCapacity ?? null],
+  )
+  const rows = await dbQuery(
+    `
+    SELECT id, category_id as categoryId, name, is_active as isActive, description, duration, max_capacity as maxCapacity, created_at, updated_at
+    FROM activities
+    WHERE id = ?
+    LIMIT 1
+  `,
+    [id],
+  )
+  return NextResponse.json(mapActivity(rows[0]), { status: 201 })
 }

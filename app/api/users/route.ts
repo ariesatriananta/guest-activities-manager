@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { dbExecute, dbQuery, mysqlDuplicateCode } from "@/lib/db"
 import bcrypt from "bcryptjs"
+import { randomUUID } from "crypto"
 import { z } from "zod"
 
 const createUserSchema = z.object({
@@ -19,11 +20,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const rows = await sql`
+  const rows = await dbQuery(`
     SELECT id, email, name, role, avatar_img, created_at, updated_at
     FROM profiles
     ORDER BY created_at DESC
-  `
+  `)
   return NextResponse.json(rows)
 }
 
@@ -42,16 +43,27 @@ export async function POST(req: Request) {
 
   const password_hash = await bcrypt.hash(password, 10)
   try {
-    const rows = await sql`
-      INSERT INTO profiles (email, password_hash, name, role, avatar_img)
-      VALUES (${email.toLowerCase()}, ${password_hash}, ${name}, ${role}, ${avatar_img || null})
-      RETURNING id, email, name, role, avatar_img, created_at, updated_at
-    `
+    const id = randomUUID()
+    await dbExecute(
+      `
+      INSERT INTO profiles (id, email, password_hash, name, role, avatar_img)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+      [id, email.toLowerCase(), password_hash, name, role, avatar_img || null],
+    )
+    const rows = await dbQuery(
+      `
+      SELECT id, email, name, role, avatar_img, created_at, updated_at
+      FROM profiles
+      WHERE id = ?
+      LIMIT 1
+    `,
+      [id],
+    )
     return NextResponse.json(rows[0], { status: 201 })
   } catch (e: any) {
     const msg = e?.message || "Failed"
-    const code = e?.code || e?.name
-    if (code === "23505") {
+    if (mysqlDuplicateCode(e)) {
       return NextResponse.json({ error: "Email already exists" }, { status: 409 })
     }
     return NextResponse.json({ error: msg }, { status: 400 })

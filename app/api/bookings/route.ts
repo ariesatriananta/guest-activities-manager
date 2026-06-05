@@ -1,12 +1,39 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { bool, dbExecute, dbQuery } from "@/lib/db"
+import { randomUUID } from "crypto"
 
-function toHHmm(t: string): string {
-  // t expected 'HH:MM:SS' or 'HH:MM'
-  const [h, m] = t.split(":")
-  return `${h.padStart(2, "0")}:${(m || "00").padStart(2, "0")}`
+const bookingSelect = `
+  SELECT b.id,
+         DATE_FORMAT(b.date, '%Y-%m-%d') as date,
+         TIME_FORMAT(b.start_time, '%H:%i') as startTime,
+         TIME_FORMAT(b.end_time, '%H:%i') as endTime,
+         b.activity_id as activityId,
+         b.venue_id as venueId,
+         b.guest_name as guestName,
+         b.suite_number as suiteNumber,
+         b.pax,
+         b.ga_name as gaName,
+         b.driver_name as driverName,
+         b.bill,
+         b.remark,
+         b.status,
+         b.created_at as createdAt,
+         b.updated_at as updatedAt,
+         b.created_by as createdById,
+         b.updated_by as updatedById,
+         creator.name as createdByName,
+         updater.name as updatedByName
+  FROM bookings b
+  LEFT JOIN activities a ON a.id = b.activity_id
+  LEFT JOIN profiles creator ON creator.id = b.created_by
+  LEFT JOIN profiles updater ON updater.id = b.updated_by
+`
+
+async function getBookingById(id: string) {
+  const rows = await dbQuery(`${bookingSelect} WHERE b.id = ? LIMIT 1`, [id])
+  return rows[0] || null
 }
 
 export async function GET(req: Request) {
@@ -14,44 +41,37 @@ export async function GET(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
+  const params: unknown[] = []
+  const conditions: string[] = []
   const dateFrom = searchParams.get("dateFrom")
   const dateTo = searchParams.get("dateTo")
   const venueId = searchParams.get("venueId")
   const categoryId = searchParams.get("categoryId")
   const status = searchParams.get("status")
 
-  const rows = await sql<any[]>`
-    SELECT b.id,
-           to_char(b.date, 'YYYY-MM-DD') as date,
-           to_char(b.start_time, 'HH24:MI') as "startTime",
-           to_char(b.end_time, 'HH24:MI') as "endTime",
-           b.activity_id as "activityId",
-           b.venue_id as "venueId",
-           b.guest_name as "guestName",
-           b.suite_number as "suiteNumber",
-           b.pax,
-           b.ga_name as "gaName",
-           b.driver_name as "driverName",
-           b.bill,
-           b.remark,
-           b.status,
-           b.created_at as "createdAt",
-           b.updated_at as "updatedAt",
-           b.created_by as "createdById",
-           b.updated_by as "updatedById",
-           creator.name as "createdByName",
-           updater.name as "updatedByName"
-    FROM bookings b
-    LEFT JOIN activities a ON a.id = b.activity_id
-    LEFT JOIN profiles creator ON creator.id = b.created_by
-    LEFT JOIN profiles updater ON updater.id = b.updated_by
-    WHERE (${dateFrom}::date IS NULL OR b.date >= ${dateFrom})
-      AND (${dateTo}::date IS NULL OR b.date <= ${dateTo})
-      AND (${venueId}::uuid IS NULL OR b.venue_id = ${venueId})
-      AND (${categoryId}::uuid IS NULL OR a.category_id = ${categoryId})
-      AND (${status}::text IS NULL OR b.status = ${status})
-    ORDER BY b.date DESC, b.start_time DESC
-  `
+  if (dateFrom) {
+    conditions.push("b.date >= ?")
+    params.push(dateFrom)
+  }
+  if (dateTo) {
+    conditions.push("b.date <= ?")
+    params.push(dateTo)
+  }
+  if (venueId) {
+    conditions.push("b.venue_id = ?")
+    params.push(venueId)
+  }
+  if (categoryId) {
+    conditions.push("a.category_id = ?")
+    params.push(categoryId)
+  }
+  if (status) {
+    conditions.push("b.status = ?")
+    params.push(status)
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
+  const rows = await dbQuery(`${bookingSelect} ${where} ORDER BY b.date DESC, b.start_time DESC`, params)
   return NextResponse.json(rows)
 }
 
@@ -79,72 +99,77 @@ export async function POST(req: Request) {
     allowTentativeOverride,
   } = body || {}
 
-  // Conflict check for single-booking-per-day venues
-  const venues = await sql<{ is_single_booking_per_day: boolean; is_exclusive_by_time: boolean; name: string }[]>`
-    SELECT is_single_booking_per_day, is_exclusive_by_time, name FROM venues WHERE id = ${venueId} LIMIT 1
-  `
-  const v = venues[0]
+  const venues = await dbQuery<{ is_single_booking_per_day: number; is_exclusive_by_time: number; name: string }[]>(
+    "SELECT is_single_booking_per_day, is_exclusive_by_time, name FROM venues WHERE id = ? LIMIT 1",
+    [venueId],
+  )
+  const venue = venues[0]
   const allowOverride = allowTentativeOverride === true
 
-  if (v?.is_single_booking_per_day && !allowOverride) {
-    const conflicts = await sql`SELECT 1 FROM bookings WHERE date = ${date} AND venue_id = ${venueId} AND status IN ('confirmed','done') LIMIT 1`
+  if (venue && bool(venue.is_single_booking_per_day) && !allowOverride) {
+    const conflicts = await dbQuery(
+      "SELECT 1 FROM bookings WHERE date = ? AND venue_id = ? AND status IN ('confirmed','done') LIMIT 1",
+      [date, venueId],
+    )
     if (conflicts.length > 0) {
-      return NextResponse.json({ error: `Venue ${v.name} already has a booking on ${date}` }, { status: 400 })
-    }
-  }
-  if (v?.is_exclusive_by_time && !allowOverride) {
-    if (!endTime || typeof endTime !== 'string' || !endTime.trim()) {
-      return NextResponse.json({ error: `End time is required for venue ${v.name}` }, { status: 400 })
-    }
-    const overlaps = await sql`SELECT 1 FROM bookings
-      WHERE date = ${date}::date AND venue_id = ${venueId}::uuid AND status IN ('confirmed','done')
-        AND NOT ( ${endTime}::time <= start_time OR ${startTime}::time >= COALESCE(end_time, start_time) )
-      LIMIT 1`
-    if (overlaps.length > 0) {
-      return NextResponse.json({ error: `Time slot overlaps with existing booking at ${v.name}` }, { status: 400 })
+      return NextResponse.json({ error: `Venue ${venue.name} already has a booking on ${date}` }, { status: 400 })
     }
   }
 
-  const endTimeParam = endTime && typeof endTime === 'string' && endTime.trim() ? endTime : null
-  const rows = await sql<any[]>`
-    WITH inserted AS (
-      INSERT INTO bookings (
-        date, start_time, end_time, activity_id, venue_id, guest_name, suite_number, pax, ga_name, driver_name, bill, remark, status, created_by, updated_by
-      ) VALUES (
-        ${date}, ${startTime}::time, ${endTimeParam}::time, ${activityId}, ${venueId}, ${guestName}, ${suiteNumber}, ${pax}, ${gaName || null}, ${driverName || null}, ${bill || null}, ${remark || null}, ${status}, ${userId}, ${userId}
-      )
-      RETURNING *
+  if (venue && bool(venue.is_exclusive_by_time) && !allowOverride) {
+    if (!endTime || typeof endTime !== "string" || !endTime.trim()) {
+      return NextResponse.json({ error: `End time is required for venue ${venue.name}` }, { status: 400 })
+    }
+    const overlaps = await dbQuery(
+      `
+      SELECT 1 FROM bookings
+      WHERE date = ? AND venue_id = ? AND status IN ('confirmed','done')
+        AND NOT (? <= start_time OR ? >= COALESCE(end_time, start_time))
+      LIMIT 1
+    `,
+      [date, venueId, endTime, startTime],
     )
-    SELECT inserted.id,
-      to_char(inserted.date, 'YYYY-MM-DD') as date,
-      to_char(inserted.start_time, 'HH24:MI') as "startTime",
-      to_char(inserted.end_time, 'HH24:MI') as "endTime",
-      inserted.activity_id as "activityId",
-      inserted.venue_id as "venueId",
-      inserted.guest_name as "guestName",
-      inserted.suite_number as "suiteNumber",
-      inserted.pax,
-      inserted.ga_name as "gaName",
-      inserted.driver_name as "driverName",
-      inserted.bill,
-      inserted.remark,
-      inserted.status,
-      inserted.created_at as "createdAt",
-      inserted.updated_at as "updatedAt",
-      inserted.created_by as "createdById",
-      inserted.updated_by as "updatedById",
-      creator.name as "createdByName",
-      updater.name as "updatedByName"
-    FROM inserted
-    LEFT JOIN profiles creator ON creator.id = inserted.created_by
-    LEFT JOIN profiles updater ON updater.id = inserted.updated_by
-  `
-  const createdBooking = rows[0]
-  if (createdBooking) {
-    await sql`
-      INSERT INTO booking_history (booking_id, actor_id, action)
-      VALUES (${createdBooking.id}, ${userId}, 'created')
+    if (overlaps.length > 0) {
+      return NextResponse.json({ error: `Time slot overlaps with existing booking at ${venue.name}` }, { status: 400 })
+    }
+  }
+
+  const id = randomUUID()
+  const endTimeParam = endTime && typeof endTime === "string" && endTime.trim() ? endTime : null
+  await dbExecute(
     `
+    INSERT INTO bookings (
+      id, date, start_time, end_time, activity_id, venue_id, guest_name, suite_number,
+      pax, ga_name, driver_name, bill, remark, status, created_by, updated_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+    [
+      id,
+      date,
+      startTime,
+      endTimeParam,
+      activityId,
+      venueId,
+      guestName,
+      suiteNumber,
+      pax,
+      gaName || null,
+      driverName || null,
+      bill || null,
+      remark || null,
+      status,
+      userId,
+      userId,
+    ],
+  )
+
+  const createdBooking = await getBookingById(id)
+  if (createdBooking) {
+    await dbExecute("INSERT INTO booking_history (id, booking_id, actor_id, action) VALUES (?, ?, ?, 'created')", [
+      randomUUID(),
+      createdBooking.id,
+      userId,
+    ])
   }
   return NextResponse.json(createdBooking, { status: 201 })
 }

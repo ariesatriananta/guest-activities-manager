@@ -19,7 +19,9 @@ Setel URL produksi kamu di bagian ini jika sudah tersedia.
 - Jalankan dev server: `pnpm dev`
 - Build untuk produksi: `pnpm build`
 
-## Database (Neon)
+## Database (MySQL)
 
-- Skrip schema dan seed master data (Categories, Activities, Venues) tersedia di `sql/master-data.sql`.
-- Jalankan file tersebut di dashboard SQL Neon (idempotent, aman dijalankan berulang).
+- Aplikasi menggunakan MySQL via `DATABASE_URL`.
+- Template env lokal tersedia di `.env.mysql.local.example`.
+- Schema target tersedia di `sql/mysql-schema.sql`.
+- Runbook migrasi dari dump Neon tersedia di `docs/mysql-migration-runbook.md`.

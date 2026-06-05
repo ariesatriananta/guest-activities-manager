@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { dbQuery } from "@/lib/db"
 
 function toMinutes(t: string) {
   const [h, m] = t.split(":").map((x) => parseInt(x, 10) || 0)
@@ -29,23 +29,26 @@ export async function GET(req: Request) {
   }
 
   // Load bookings for the day/venue
-  const rows = await sql<{
+  const rows = await dbQuery<{
     startTime: string
     endTime: string | null
     guestName: string
     activityName: string
-  }[]>`
-    SELECT to_char(b.start_time, 'HH24:MI') as "startTime",
-           to_char(b.end_time,   'HH24:MI') as "endTime",
-           b.guest_name          as "guestName",
-           a.name                as "activityName"
+  }[]>(
+    `
+    SELECT TIME_FORMAT(b.start_time, '%H:%i') as startTime,
+           TIME_FORMAT(b.end_time, '%H:%i') as endTime,
+           b.guest_name as guestName,
+           a.name as activityName
     FROM bookings b
     JOIN activities a ON a.id = b.activity_id
-    WHERE b.date = ${date}::date
-      AND b.venue_id = ${venueId}::uuid
+    WHERE b.date = ?
+      AND b.venue_id = ?
       AND b.status <> 'cancelled'
     ORDER BY b.start_time ASC
-  `
+  `,
+    [date, venueId],
+  )
 
   const usedIntervals = rows.map((r) => ({
     start: r.startTime,
@@ -99,4 +102,3 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ venueId, date, slot, used: merged.map(({ start, end, guestName, activityName }) => ({ start, end, guestName, activityName })), free, freeSlots })
 }
-

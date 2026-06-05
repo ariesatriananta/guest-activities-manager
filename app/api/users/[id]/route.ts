@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { dbExecute, dbQuery } from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -27,17 +27,27 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const password_hash = password ? await bcrypt.hash(password, 10) : null
 
   try {
-    const updated = await sql`
+    await dbExecute(
+      `
       UPDATE profiles
       SET
-        name = COALESCE(${name ?? null}, name),
-        role = COALESCE(${(role as any) ?? null}::text, role),
-        avatar_img = COALESCE(${avatar_img ?? null}, avatar_img),
-        password_hash = COALESCE(${password_hash}, password_hash),
-        updated_at = now()
-      WHERE id = ${id}
-      RETURNING id, email, name, role, avatar_img, created_at, updated_at
-    `
+        name = COALESCE(?, name),
+        role = COALESCE(?, role),
+        avatar_img = COALESCE(?, avatar_img),
+        password_hash = COALESCE(?, password_hash)
+      WHERE id = ?
+    `,
+      [name ?? null, role ?? null, avatar_img ?? null, password_hash, id],
+    )
+    const updated = await dbQuery(
+      `
+      SELECT id, email, name, role, avatar_img, created_at, updated_at
+      FROM profiles
+      WHERE id = ?
+      LIMIT 1
+    `,
+      [id],
+    )
     return NextResponse.json(updated[0])
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Failed" }, { status: 400 })
@@ -54,6 +64,6 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   if (meId && id === meId) {
     return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 })
   }
-  await sql`DELETE FROM profiles WHERE id = ${id}`
+  await dbExecute("DELETE FROM profiles WHERE id = ?", [id])
   return NextResponse.json({ ok: true })
 }

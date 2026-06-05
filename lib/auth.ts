@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { sql, type ProfileRow } from "@/lib/db"
+import { dbQuery, type ProfileRow } from "@/lib/db"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
@@ -21,12 +21,15 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password || ""
         if (!email || !password) return null
 
-        const rows = await sql<ProfileRow[]>`
+        const rows = await dbQuery<ProfileRow[]>(
+          `
           SELECT id, email, password_hash, name, role, avatar_img, created_at, updated_at
           FROM profiles
-          WHERE lower(email) = ${email}
+          WHERE LOWER(email) = ?
           LIMIT 1
-        `
+        `,
+          [email],
+        )
         const user = rows?.[0]
         if (!user) return null
 

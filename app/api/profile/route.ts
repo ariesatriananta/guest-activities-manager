@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { dbExecute, dbQuery } from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -16,12 +16,15 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const meId = (session.user as any).id as string
-  const rows = await sql`
+  const rows = await dbQuery(
+    `
     SELECT id, email, name, role, avatar_img, created_at, updated_at
     FROM profiles
-    WHERE id = ${meId}
+    WHERE id = ?
     LIMIT 1
-  `
+  `,
+    [meId],
+  )
   const me = rows?.[0]
   return NextResponse.json(me)
 }
@@ -42,9 +45,12 @@ export async function PUT(req: Request) {
     if (!currentPassword) {
       return NextResponse.json({ error: "Current password is required" }, { status: 400 })
     }
-    const existing = await sql<{ password_hash: string }[]>`
-      SELECT password_hash FROM profiles WHERE id = ${meId} LIMIT 1
-    `
+    const existing = await dbQuery<{ password_hash: string }[]>(
+      `
+      SELECT password_hash FROM profiles WHERE id = ? LIMIT 1
+    `,
+      [meId],
+    )
     const hash = existing?.[0]?.password_hash
     if (!hash || !(await bcrypt.compare(currentPassword, hash))) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
@@ -53,15 +59,25 @@ export async function PUT(req: Request) {
 
   const newHash = typeof newPassword !== "undefined" ? await bcrypt.hash(newPassword, 10) : null
 
-  const rows = await sql`
+  await dbExecute(
+    `
     UPDATE profiles
     SET
-      name = COALESCE(${name ?? null}, name),
-      avatar_img = COALESCE(${avatar_img ?? null}, avatar_img),
-      password_hash = COALESCE(${newHash}, password_hash),
-      updated_at = now()
-    WHERE id = ${meId}
-    RETURNING id, email, name, role, avatar_img, created_at, updated_at
-  `
+      name = COALESCE(?, name),
+      avatar_img = COALESCE(?, avatar_img),
+      password_hash = COALESCE(?, password_hash)
+    WHERE id = ?
+  `,
+    [name ?? null, avatar_img ?? null, newHash, meId],
+  )
+  const rows = await dbQuery(
+    `
+    SELECT id, email, name, role, avatar_img, created_at, updated_at
+    FROM profiles
+    WHERE id = ?
+    LIMIT 1
+  `,
+    [meId],
+  )
   return NextResponse.json(rows[0])
 }
