@@ -41,6 +41,7 @@ Do not import `sql/neondb-20260605-2300.sql` directly into MySQL because it is a
 
 ## Application Cutover
 
+
 1. Keep users off the application until smoke tests pass.
 2. Import into the Hostinger MySQL database using the same importer and final Hostinger credentials.
 3. Set Vercel `DATABASE_URL` to the Hostinger MySQL URL.
